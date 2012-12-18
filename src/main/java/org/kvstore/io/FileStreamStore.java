@@ -94,7 +94,7 @@ public final class FileStreamStore {
 	 */
 	public FileStreamStore(final File file, final int bufferSize) {
 		this.file = file;
-		this.bits = ((int)Math.ceil(Math.log(Math.min(bufferSize, 512))/Math.log(2))); // round to power of 2
+		this.bits = ((int)Math.ceil(Math.log(Math.max(bufferSize, 512))/Math.log(2))); // round to power of 2
 		this.bufInput = ByteBuffer.allocate(512); // default HDD sector size
 		this.bufOutput = ByteBuffer.allocate(1 << bits);
 	}
