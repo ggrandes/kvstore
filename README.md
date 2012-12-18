@@ -1,6 +1,7 @@
 # KVStore
 
-KVStore is an open source (Apache License, Version 2.0) Java "fixed length" Key-Value Store (memory & disk). API is similar to [TreeMap](http://docs.oracle.com/javase/6/docs/api/java/util/TreeMap.html)
+KVStore is an open source (Apache License, Version 2.0) Java "fixed length" Key-Value Store (memory & disk).
+API is similar to [TreeMap](http://docs.oracle.com/javase/6/docs/api/java/util/TreeMap.html)
 
 ### Currently in Development
 
