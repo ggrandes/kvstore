@@ -209,14 +209,15 @@ public final class FileStreamStore {
 	public int read(final long offset, final ByteBuffer buf) {
 		if (!validState) throw new InvalidStateException();
 		try {
+			final int HEADER_LEN = 6;
 			if (offset >= offsetOutputCommited) {
 				System.out.println("WARN: autosync forced");
 				sync();
 			}
 			fcInput.position(offset);
 			bufInput.clear();
-			final int readed = fcInput.read(bufInput); // Read 1 sector
-			if (readed < 4) { // int 4 bytes
+			int readed = fcInput.read(bufInput); // Read 1 sector
+			if (readed < HEADER_LEN) { // short+int 6 bytes
 				return -1;
 			}
 			bufInput.flip();
@@ -226,12 +227,13 @@ public final class FileStreamStore {
 				return -1;
 			}
 			final int datalen = bufInput.getInt(); 	// Header - Data Size (int, 4 bytes)
+			bufInput.limit(Math.min(readed, datalen+HEADER_LEN));
 			buf.put(bufInput);
-			if (datalen > readed) {
-				System.out.println("datalen=" + datalen);
+			if (datalen > (readed-HEADER_LEN)) {
 				buf.limit(datalen);
-				fcInput.read(buf);
+				readed = fcInput.read(buf);
 			}
+			buf.flip();
 			return datalen;
 		}
 		catch(Exception e) {
