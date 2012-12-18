@@ -9,9 +9,26 @@ KVStore is an open source (Apache License, Version 2.0) Java Key-Value Store (me
 # Usage Example
 
 ```java
-		final BplusTreeFile<IntHolder, IntHolder> tree = new BplusTreeFile<IntHolder, IntHolder>(true, 512, IntHolder.class, IntHolder.class, btreeFile);
+import java.util.Iterator;
+import org.kvstore.holders.IntHolder;
+import org.kvstore.structures.btree.BplusTree.TreeEntry;
+import org.kvstore.structures.btree.BplusTreeFile;
+
+public class Example {
+	private static final String btreeFile = "/tmp/test";
+	//
+	public static void main(final String[] args) throws Exception {
+		final int[] keys = new int[] {
+				5, 7, -11, 111, 0
+		};
 		//
-		// Clear all data in datafiles
+		BplusTreeFile<IntHolder, IntHolder> tree;
+		tree = new BplusTreeFile<IntHolder, IntHolder>(
+			true, 512, 
+			IntHolder.class, IntHolder.class, 
+			btreeFile
+		);
+		//
 		tree.clear();
 		// ============== INSERT
 		for (int i = 0; i < keys.length; i++) {
@@ -19,7 +36,6 @@ KVStore is an open source (Apache License, Version 2.0) Java Key-Value Store (me
 			final IntHolder value = IntHolder.valueOf(i);
 			tree.put(key, value);
 		}
-		// Force write changes to disk
 		tree.sync();
 		// ============== GET
 		System.out.println("tree.get(7)=" + tree.get(IntHolder.valueOf(7)));
@@ -34,10 +50,11 @@ KVStore is an open source (Apache License, Version 2.0) Java Key-Value Store (me
 		System.out.println("tree.firstKey()=" + tree.firstKey());
 		System.out.println("tree.lastKey()=" + tree.lastKey());
 		//
-		// Force write changes to disk
 		tree.sync();
-		// Close
 		tree.close();
+	}
+
+}
 ```
 
 
