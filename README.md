@@ -1,6 +1,6 @@
 # KVStore
 
-KVStore is an open source (Apache License, Version 2.0) Java Key-Value Store (memory & disk). Do not require any external lib.
+KVStore is an open source (Apache License, Version 2.0) Java "fixed length" Key-Value Store (memory & disk). Do not require any external lib.
 
 ### Currently in Development
 
