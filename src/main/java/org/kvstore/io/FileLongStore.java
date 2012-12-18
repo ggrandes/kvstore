@@ -40,7 +40,7 @@ public class FileLongStore {
 	 */
 	private FileChannel fc = null;
 	/**
-	 * ByteBuffer for Output (internal used)
+	 * ByteBuffer (internal used)
 	 */
 	private final ByteBuffer buf = ByteBuffer.allocate(8);
 	/**
@@ -118,6 +118,16 @@ public class FileLongStore {
 	}
 
 	/**
+	 * Read value from file
+	 * @throws IOException 
+	 */
+	public synchronized boolean canRead() throws IOException {
+		if (!validState) throw new InvalidStateException();
+		final long offset = ((fc.size() & ~7) -8);
+		return (offset >= 0);
+	}
+
+	/**
 	 * @return size of file in bytes
 	 * @see #getBlockSize()
 	 */
@@ -174,15 +184,6 @@ public class FileLongStore {
 		return value;
 	}
 
-	/**
-	 * Read value from file
-	 * @throws IOException 
-	 */
-	public synchronized boolean canRead() throws IOException {
-		if (!validState) throw new InvalidStateException();
-		final long offset = ((fc.size() & ~7) -8);
-		return (offset >= 0);
-	}
 	/**
 	 * Read value from file
 	 * @throws IOException 
