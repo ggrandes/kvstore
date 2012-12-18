@@ -57,6 +57,16 @@ public class Example {
 }
 ```
 
+#### The Result:
+
+	tree.get(7)=1
+	Key=-11 Value=2
+	Key=0 Value=4
+	Key=5 Value=0
+	Key=111 Value=3
+	tree.firstKey()=-11
+	tree.lastKey()=111
+
 
 ---
 Inspired in [Book: Open Data Structures in Java](http://opendatastructures.org/ods-java/14_2_B_Trees.html), [Perl DB_File](http://search.cpan.org/~pmqs/DB_File-1.827/DB_File.pm), [JDBM3](https://github.com/jankotek/JDBM3) and [H2-Database](http://www.h2database.com/), this code is Java-minimalistic version.
