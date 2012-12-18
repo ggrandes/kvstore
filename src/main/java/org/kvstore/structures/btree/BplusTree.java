@@ -487,7 +487,7 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 		if (_isEmpty()) return null;
 		try {
 			int nodeIdx = (lowORhigh ? lowIdx : highIdx); // rootIdx;
-			Node<K, V> nodeFind = getNode(nodeIdx);
+			Node<K, V> nodeFind = getNode((nodeIdx == 0) ? rootIdx : nodeIdx);
 			while (!nodeFind.isLeaf()) {
 				nodeIdx = ((InternalNode<K, V>)nodeFind).childs[(lowORhigh ? 0 : nodeFind.allocated)];
 				nodeFind = getNode(nodeIdx);
