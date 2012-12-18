@@ -39,7 +39,7 @@ public final class FileStreamStore {
 	 * ^9=512 ^12=4096 ^16=65536
 	 */
 	private final int bits;
-	
+
 	/**
 	 * RamdomAccessFile for Input this store
 	 */
@@ -52,7 +52,7 @@ public final class FileStreamStore {
 	 * ByteBuffer for Input (internal used)
 	 */
 	private final ByteBuffer bufInput;
-	
+
 	/**
 	 * FileOutputStream for Output this store
 	 */
@@ -266,16 +266,16 @@ public final class FileStreamStore {
 			// Remember current offset
 			final long offset = offsetOutputUncommited;
 			// Write pending buffered data to disk
-            if (bufOutput.remaining() < packet_size) {
-    			flushBuffer();
-            }
-            // Write new data to buffer
-            bufOutput.putShort(MAGIC); 		// Header - Magic (short, 2 bytes)
-            bufOutput.putInt(buf.limit()); 	// Header - Data Size (int, 4 bytes)
-            bufOutput.put(buf); 			// Data Body
-            // Increment offset of buffered data (header + user-data)
-            offsetOutputUncommited += packet_size;
-            //
+			if (bufOutput.remaining() < packet_size) {
+				flushBuffer();
+			}
+			// Write new data to buffer
+			bufOutput.putShort(MAGIC); 		// Header - Magic (short, 2 bytes)
+			bufOutput.putInt(buf.limit()); 	// Header - Data Size (int, 4 bytes)
+			bufOutput.put(buf); 			// Data Body
+			// Increment offset of buffered data (header + user-data)
+			offsetOutputUncommited += packet_size;
+			//
 			return offset;
 		}
 		catch(Exception e) {
@@ -292,16 +292,16 @@ public final class FileStreamStore {
 	private final int nextBlockBoundary(final long offset) {
 		return (int)((((offset >> bits) + 1) << bits) - offset);
 	}
-	
+
 	/**
 	 * Pad output buffer with NULL to complete alignment
 	 * @param diff bytes
 	 * @throws IOException
 	 */
 	private final void alignBuffer(final int diff) throws IOException {
-        if (bufOutput.remaining() < diff) {
+		if (bufOutput.remaining() < diff) {
 			flushBuffer();
-        }
+		}
 		int i = 0; 
 		for (; i+8 <= diff; i+=8) {
 			bufOutput.putLong(0L);
@@ -319,7 +319,7 @@ public final class FileStreamStore {
 			bufOutput.put((byte)0);
 		}
 	}
-	
+
 	/**
 	 * Write uncommited data to disk
 	 * @throws IOException
@@ -331,7 +331,7 @@ public final class FileStreamStore {
 			bufOutput.clear();
 		}
 	}
-	
+
 	/**
 	 * Forces any updates to this file to be written to the storage device that contains it.
 	 * @return false if exception occur 

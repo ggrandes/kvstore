@@ -42,6 +42,4 @@ public final class PrimeFinder {
 		final int i = Arrays.binarySearch(primeCapacities, desiredCapacity);
 		return primeCapacities[((i < 0) ? ((-i) - 1) : i)];
 	}
-
 }
-
