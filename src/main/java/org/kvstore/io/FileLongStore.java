@@ -42,7 +42,7 @@ public class FileLongStore {
 	/**
 	 * ByteBuffer for Output (internal used)
 	 */
-	private final ByteBuffer buf;
+	private final ByteBuffer buf = ByteBuffer.allocate(8);
 	/**
 	 * In Valid State?
 	 */
@@ -66,7 +66,6 @@ public class FileLongStore {
 	 */
 	public FileLongStore(final File file) {
 		this.file = file;
-		this.buf = ByteBuffer.allocate(8);
 	}
 
 	// ========= Open / Close =========
@@ -257,6 +256,5 @@ public class FileLongStore {
 	}
 
 	// ========= END =========
-
 
 }
