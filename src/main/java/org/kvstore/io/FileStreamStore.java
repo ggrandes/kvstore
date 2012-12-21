@@ -29,6 +29,7 @@ import java.nio.channels.FileChannel;
 public final class FileStreamStore {
 	private final static short MAGIC = 0x754C;
 	private static final boolean DEBUG = false;
+	private static final int HEADER_LEN = 6;
 
 	/**
 	 * File associated to this store
@@ -77,11 +78,23 @@ public final class FileStreamStore {
 	 * In Valid State?
 	 */
 	private boolean validState = false;
+	/**
+	 * sync to disk on flushbuffer?
+	 */
+	private boolean syncOnFlush = true;
+	/**
+	 * align data to buffer boundary?
+	 */
+	private boolean alignBlocks = true;
+	/**
+	 * Callback called when flush buffers to disk
+	 */
+	private CallbackSync callback = null;
 
 	/**
 	 * Instantiate FileStreamStore
 	 * @param file name of file to open
-	 * @param size for buffer to reduce context switching (minimal is 512bytes) 
+	 * @param size for buffer to reduce context switching (minimal is 512bytes, recommended 64KBytes)
 	 */
 	public FileStreamStore(final String file, final int bufferSize) {
 		this(new File(file), bufferSize);
@@ -162,7 +175,7 @@ public final class FileStreamStore {
 	 */
 	public long size() {
 		try {
-			return file.length();
+			return (file.length() + bufOutput.position());
 		}
 		catch(Exception e) {
 			e.printStackTrace();
@@ -201,31 +214,69 @@ public final class FileStreamStore {
 	// ========= Operations =========
 
 	/**
+	 * set sync to disk flush buffer to true/false, default true
+	 * @param syncOnFlush
+	 */
+	public void setSyncOnFlush(final boolean syncOnFlush) {
+		this.syncOnFlush = syncOnFlush;
+	}
+	/**
+	 * set align blocks to buffer boundary to true/false, default true
+	 * @param alignBlocks
+	 */
+	public void setAlignBlocks(final boolean alignBlocks) {
+		this.alignBlocks = alignBlocks;
+	}
+	/**
+	 * set callback called when buffers where synched to disk
+	 * @param callback
+	 */
+	public void setCallback(final CallbackSync callback) {
+		this.callback = callback;
+	}
+	
+	/**
 	 * Read block from file
 	 * @param offset of block
 	 * @param ByteBuffer
-	 * @return length of data
+	 * @return new offset (offset+headerlen+datalen)
 	 */
-	public int read(final long offset, final ByteBuffer buf) {
+	public long read(long offset, final ByteBuffer buf) {
 		if (!validState) throw new InvalidStateException();
 		try {
-			final int HEADER_LEN = 6;
-			if (offset >= offsetOutputCommited) {
-				System.out.println("WARN: autosync forced");
-				sync();
+			int readed;
+			while (true) {
+				if (offset >= offsetOutputCommited) {
+					if (bufOutput.position() > 0) {
+						System.out.println("WARN: autoflush forced");
+						flushBuffer();
+					}
+				}
+				fcInput.position(offset);
+				bufInput.clear();
+				readed = fcInput.read(bufInput); // Read 1 sector
+				if (readed < HEADER_LEN) { // short+int (6 bytes)
+					return -1;
+				}
+				bufInput.flip();
+				final int magicB1 = (bufInput.get() & 0xFF); 	// Header - Magic (short, 2 bytes, msb-first)
+				final int magicB2 = (bufInput.get() & 0xFF); 	// Header - Magic (short, 2 bytes, lsb-last)
+				if (alignBlocks && (magicB1 == 0)) {
+					final int diffOffset = nextBlockBoundary(offset);
+					if (diffOffset > 0) {
+//						System.out.println("WARN: skipping " + diffOffset + "bytes to next block-boundary");
+						offset += diffOffset;
+						continue;
+					}
+				}
+				final int magic = ((magicB1 << 8) | magicB2);
+				if (magic != MAGIC) {
+					System.out.println("MAGIC fake=" + Integer.toHexString(magic) + " expected=" + Integer.toHexString(MAGIC));
+					return -1;
+				}
+				break;
 			}
-			fcInput.position(offset);
-			bufInput.clear();
-			int readed = fcInput.read(bufInput); // Read 1 sector
-			if (readed < HEADER_LEN) { // short+int 6 bytes
-				return -1;
-			}
-			bufInput.flip();
-			final short magic = bufInput.getShort(); 	// Header - Magic (short, 2 bytes)
-			if (magic != MAGIC) {
-				System.out.println("MAGIC fake=" + Integer.toHexString(magic) + " expected=" + Integer.toHexString(MAGIC));
-				return -1;
-			}
+			//
 			final int datalen = bufInput.getInt(); 	// Header - Data Size (int, 4 bytes)
 			bufInput.limit(Math.min(readed, datalen+HEADER_LEN));
 			buf.put(bufInput);
@@ -234,7 +285,7 @@ public final class FileStreamStore {
 				readed = fcInput.read(buf);
 			}
 			buf.flip();
-			return datalen;
+			return (offset+HEADER_LEN+datalen);
 		}
 		catch(Exception e) {
 			e.printStackTrace();
@@ -243,7 +294,7 @@ public final class FileStreamStore {
 	}
 
 	/**
-	 * Write from bufInput to file
+	 * Write from buf to file
 	 * 
 	 * @param offset of block
 	 * @param buf ByteBuffer to write
@@ -252,18 +303,20 @@ public final class FileStreamStore {
 	public long write(final ByteBuffer buf) {
 		if (!validState) throw new InvalidStateException();
 		// Sanity check
-		final int packet_size = (2 + 4 + buf.limit()); // short + int + data
-		if (packet_size > (1<<bits)) {
-			System.err.println("ERROR: packet size is greater ("+packet_size+") than file buffer (" + bufOutput.capacity() + ")");
-			return -1L;
-		}
+		final int packet_size = (HEADER_LEN + buf.limit()); // short + int + data
+		final boolean useDirectIO = (packet_size > (1<<bits));
 		try {
+			if (useDirectIO) {
+				System.err.println("WARN: usingDirectIO packet size is greater ("+packet_size+") than file buffer (" + bufOutput.capacity() + ")");
+			}
 			// Align output
-			final int diffOffset = nextBlockBoundary(offsetOutputUncommited);
-			if (packet_size > diffOffset) {
-				//System.err.println("WARN: aligning offset=" + offsetOutputUncommited + " to=" + (offsetOutputUncommited+diffOffset) + " needed=" + packet_size + " allowed=" + diffOffset);
-				alignBuffer(diffOffset);
-				offsetOutputUncommited += diffOffset;
+			if (alignBlocks && !useDirectIO) {
+				final int diffOffset = nextBlockBoundary(offsetOutputUncommited);
+				if (packet_size > diffOffset) {
+					//System.err.println("WARN: aligning offset=" + offsetOutputUncommited + " to=" + (offsetOutputUncommited+diffOffset) + " needed=" + packet_size + " allowed=" + diffOffset);
+					alignBuffer(diffOffset);
+					offsetOutputUncommited += diffOffset;
+				}
 			}
 			// Remember current offset
 			final long offset = offsetOutputUncommited;
@@ -272,11 +325,25 @@ public final class FileStreamStore {
 				flushBuffer();
 			}
 			// Write new data to buffer
-			bufOutput.putShort(MAGIC); 		// Header - Magic (short, 2 bytes)
-			bufOutput.putInt(buf.limit()); 	// Header - Data Size (int, 4 bytes)
-			bufOutput.put(buf); 			// Data Body
-			// Increment offset of buffered data (header + user-data)
-			offsetOutputUncommited += packet_size;
+			bufOutput.put((byte)((MAGIC>>8) & 0xFF)); 	// Header - Magic (short, 2 bytes, msb-first)
+			bufOutput.put((byte)(MAGIC & 0xFF)); 		// Header - Magic (short, 2 bytes, lsb-last)
+			bufOutput.putInt(buf.limit()); 				// Header - Data Size (int, 4 bytes)
+			if (useDirectIO) {
+				bufOutput.flip();
+				fcOutput.write(new ByteBuffer[] { bufOutput, buf });
+				bufOutput.clear();
+				offsetOutputUncommited = offsetOutputCommited = fcOutput.position();
+				if (syncOnFlush) {
+					fcOutput.force(false);
+					if (callback != null)
+						callback.synched(offsetOutputUncommited);
+				}
+			}
+			else {
+				bufOutput.put(buf); 			// Data Body
+				// Increment offset of buffered data (header + user-data)
+				offsetOutputUncommited += packet_size;
+			}
 			//
 			return offset;
 		}
@@ -331,6 +398,13 @@ public final class FileStreamStore {
 			bufOutput.flip();
 			fcOutput.write(bufOutput);
 			bufOutput.clear();
+			//System.out.println("offsetOutputUncommited=" + offsetOutputUncommited + " offsetOutputCommited=" + offsetOutputCommited + " fcOutput.position()=" + fcOutput.position());
+			offsetOutputUncommited = offsetOutputCommited = fcOutput.position();
+			if (syncOnFlush) {
+				fcOutput.force(false);
+				if (callback != null)
+					callback.synched(fcOutput.position());
+			}
 		}
 	}
 
@@ -342,14 +416,21 @@ public final class FileStreamStore {
 		if (!validState) throw new InvalidStateException();
 		try { 
 			flushBuffer();
-			fcOutput.force(false);
-			offsetOutputUncommited = offsetOutputCommited = fcOutput.position();
+			if (!syncOnFlush) {
+				fcOutput.force(false);
+				if (callback != null)
+					callback.synched(fcOutput.position());
+			}
 			return true;
 		}
 		catch(Exception e) {
 			e.printStackTrace();
 		}
 		return false;
+	}
+	
+	public static interface CallbackSync {
+		public void synched(final long offset);
 	}
 
 	// ========= Exceptions =========
