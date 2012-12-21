@@ -543,9 +543,9 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	private IntLinkedHashMap<Node> cacheLeafNodes;
 
 	/**
-	 * Set new value of maximal bytes used for nodes in cache.
+	 * Clear caches and Set new value of maximal bytes used for nodes in cache.
 	 * 
-	 * @param newsize size of cache in bytes
+	 * @param newsize size of cache in bytes (0 only clear caches)
 	 * <p>
 	 * <ul>
 	 * <li> Calculo aproximado del numero de elementos que se pueden mantener en memoria:
@@ -571,8 +571,10 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			privateSync(true);
 			clearReadCaches();
 		}
-		maxCacheSizeInBytes = newsize;
-		createReadCaches();
+		if (newsize >= 1024) { // 1KB minimal
+			maxCacheSizeInBytes = newsize;
+			createReadCaches();
+		}
 	}
 	/**
 	 * @return current value of cache in bytes
