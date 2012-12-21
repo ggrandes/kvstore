@@ -28,6 +28,7 @@ import java.nio.channels.FileChannel;
  */
 public final class FileStreamStore {
 	private final static short MAGIC = 0x754C;
+	private final static byte MAGIC_PADDING = 0x42;
 	private static final boolean DEBUG = false;
 	private static final int HEADER_LEN = 6;
 
@@ -261,7 +262,7 @@ public final class FileStreamStore {
 				bufInput.flip();
 				final int magicB1 = (bufInput.get() & 0xFF); 	// Header - Magic (short, 2 bytes, msb-first)
 				final int magicB2 = (bufInput.get() & 0xFF); 	// Header - Magic (short, 2 bytes, lsb-last)
-				if (alignBlocks && (magicB1 == 0)) {
+				if (alignBlocks && (magicB1 == MAGIC_PADDING)) {
 					final int diffOffset = nextBlockBoundary(offset);
 					if (diffOffset > 0) {
 //						System.out.println("WARN: skipping " + diffOffset + "bytes to next block-boundary");
@@ -371,7 +372,8 @@ public final class FileStreamStore {
 		if (bufOutput.remaining() < diff) {
 			flushBuffer();
 		}
-		int i = 0; 
+		bufOutput.put(MAGIC_PADDING); // Magic for Padding
+		int i = 1;
 		for (; i+8 <= diff; i+=8) {
 			bufOutput.putLong(0L);
 		}
