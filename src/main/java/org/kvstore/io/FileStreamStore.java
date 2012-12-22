@@ -303,7 +303,6 @@ public final class FileStreamStore {
 	 */
 	public long write(final ByteBuffer buf) {
 		if (!validState) throw new InvalidStateException();
-		// Sanity check
 		final int packet_size = (HEADER_LEN + buf.limit()); // short + int + data
 		final boolean useDirectIO = (packet_size > (1<<bits));
 		try {
@@ -331,7 +330,7 @@ public final class FileStreamStore {
 			bufOutput.putInt(buf.limit()); 				// Header - Data Size (int, 4 bytes)
 			if (useDirectIO) {
 				bufOutput.flip();
-				fcOutput.write(new ByteBuffer[] { bufOutput, buf });
+				fcOutput.write(new ByteBuffer[] { bufOutput, buf }); // Write Header + Data
 				bufOutput.clear();
 				offsetOutputUncommited = offsetOutputCommited = fcOutput.position();
 				if (syncOnFlush) {
@@ -341,7 +340,7 @@ public final class FileStreamStore {
 				}
 			}
 			else {
-				bufOutput.put(buf); 			// Data Body
+				bufOutput.put(buf); // Data Body
 				// Increment offset of buffered data (header + user-data)
 				offsetOutputUncommited += packet_size;
 			}
