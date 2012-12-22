@@ -193,8 +193,7 @@ public final class FileStreamStore {
 		if (!validState) throw new InvalidStateException();
 		try {
 			bufOutput.clear();
-			fcOutput.position(0);
-			fcOutput.truncate(0);
+			fcOutput.position(0).truncate(0).force(true);
 			close();
 			open();
 		}
@@ -253,9 +252,8 @@ public final class FileStreamStore {
 						flushBuffer();
 					}
 				}
-				fcInput.position(offset);
 				bufInput.clear();
-				readed = fcInput.read(bufInput); // Read 1 sector
+				readed = fcInput.position(offset).read(bufInput); // Read 1 sector
 				if (readed < HEADER_LEN) { // short+int (6 bytes)
 					return -1;
 				}
@@ -336,7 +334,7 @@ public final class FileStreamStore {
 				if (syncOnFlush) {
 					fcOutput.force(false);
 					if (callback != null)
-						callback.synched(offsetOutputUncommited);
+						callback.synched(offsetOutputCommited);
 				}
 			}
 			else {
@@ -404,7 +402,7 @@ public final class FileStreamStore {
 			if (syncOnFlush) {
 				fcOutput.force(false);
 				if (callback != null)
-					callback.synched(fcOutput.position());
+					callback.synched(offsetOutputCommited);
 			}
 		}
 	}
@@ -420,7 +418,7 @@ public final class FileStreamStore {
 			if (!syncOnFlush) {
 				fcOutput.force(false);
 				if (callback != null)
-					callback.synched(fcOutput.position());
+					callback.synched(offsetOutputCommited);
 			}
 			return true;
 		}
