@@ -57,6 +57,10 @@ public class FileBlockStore {
 	 * In Valid State?
 	 */
 	private boolean validState = false;
+	/**
+	 * Callback called when flush buffers to disk
+	 */
+	private CallbackSync callback = null;
 
 	/**
 	 * Instantiate FileBlockStore
@@ -162,8 +166,7 @@ public class FileBlockStore {
 	public void clear() {
 		if (!validState) throw new InvalidStateException();
 		try {
-			fileChannel.position(0);
-			fileChannel.truncate(0);
+			fileChannel.position(0).truncate(0);
 			sync();
 		}
 		catch(Exception e) {
@@ -182,6 +185,14 @@ public class FileBlockStore {
 	// ========= Operations =========
 
 	/**
+	 * set callback called when buffers where synched to disk
+	 * @param callback
+	 */
+	public void setCallback(final CallbackSync callback) {
+		this.callback = callback;
+	}
+
+	/**
 	 * Read block from file
 	 * @param index of block
 	 * @return ByteBuffer from pool with data
@@ -197,8 +208,7 @@ public class FileBlockStore {
 				mbb.position(index * blockSize);
 				buf.put(mbb);
 			} else {
-				fileChannel.position(index * blockSize);
-				fileChannel.read(buf);
+				fileChannel.position(index * blockSize).read(buf);
 			}
 			buf.rewind();
 			return buf;
@@ -228,8 +238,7 @@ public class FileBlockStore {
 				mbb.position(index * blockSize);
 				mbb.put(buf);
 			} else {
-				fileChannel.position(index * blockSize);
-				fileChannel.write(buf);
+				fileChannel.position(index * blockSize).write(buf);
 			}
 			bufstack.push(buf);
 			return true;
@@ -251,6 +260,12 @@ public class FileBlockStore {
 		if (fileChannel != null) {
 			try { fileChannel.force(false); } catch(Exception ign) {}
 		}
+		if (callback != null)
+			callback.synched();
+	}
+
+	public static interface CallbackSync {
+		public void synched();
 	}
 
 	// ========= Exceptions =========
