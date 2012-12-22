@@ -150,8 +150,7 @@ public class FileLongStore {
 		if (!validState) throw new InvalidStateException();
 		try {
 			buf.clear();
-			fc.position(0);
-			fc.truncate(0);
+			fc.position(0).truncate(0).force(true);
 			close();
 			open();
 		}
@@ -193,9 +192,8 @@ public class FileLongStore {
 		final long offset = ((fc.size() & ~7) -8);
 		if (offset < 0)
 			throw new IOException("Empty file");
-		fc.position(offset);
 		buf.clear();
-		int readed = fc.read(buf);
+		int readed = fc.position(offset).read(buf);
 		if (readed < 8) { // long 8 bytes
 			throw new IOException("cant read long from file");
 		}
@@ -207,13 +205,23 @@ public class FileLongStore {
 	 * Write value to file
 	 * @throws IOException 
 	 */
-	public synchronized void write() throws IOException {
+	public void write() throws IOException {
+		write(false);
+	}
+
+	/**
+	 * Write value to file
+	 * @param forceSync if true data must be synced to disk
+	 * @throws IOException 
+	 */
+	public synchronized void write(final boolean forceSync) throws IOException {
 		if (!validState) throw new InvalidStateException();
 		buf.clear();
 		buf.putLong(value);
 		buf.flip();
-		fc.position(fc.size()); // go end
-		fc.write(buf);
+		fc.position(fc.size()).write(buf); // go end and write
+		if (forceSync)
+			fc.force(false);
 	}
 
 	/**
@@ -225,10 +233,8 @@ public class FileLongStore {
 		buf.clear();
 		buf.putLong(value);
 		buf.flip();
-		fc.position(0); // go begin
-		fc.write(buf);
-		fc.truncate(8);
-		fc.force(true);
+		fc.position(0).write(buf); // go begin and write
+		fc.truncate(8).force(true);
 	}
 
 	/**
