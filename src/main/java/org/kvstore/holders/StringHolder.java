@@ -14,8 +14,7 @@
  */
 package org.kvstore.holders;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-
+import org.kvstore.io.StringSerializer;
 import org.kvstore.pool.StringPool;
 
 /**
@@ -77,33 +76,11 @@ public final class StringHolder extends DataHolder<StringHolder> {
 	}
 
 	public void serialize(ByteBuffer buf) {
-		fromStringToBuffer(buf, value);
+		StringSerializer.fromStringToBuffer(buf, value);
 	}
 
 	public StringHolder deserialize(ByteBuffer buf) {
-		return valueOf(fromBufferToString(buf));
-	}
-
-	// Helper
-	private static final Charset cs = Charset.forName("UTF-8");
-	public static final void fromStringToBuffer(final ByteBuffer out, final String str) {
-		if (str == null) {
-			out.putInt(Integer.MIN_VALUE);
-			return;
-		}
-		final byte[] bytes = str.getBytes(cs);
-		final int len = bytes.length;
-		out.putInt(len);
-		out.put(bytes, 0, len);
-	}
-	public static final String fromBufferToString(final ByteBuffer in) {
-		final int len = in.getInt();
-		if (len == Integer.MIN_VALUE) {
-			return null;
-		}
-		final byte[] bytes = new byte[len];
-		in.get(bytes, 0, len);
-		return new String(bytes, 0, len, cs);
+		return valueOf(StringSerializer.fromBufferToString(buf));
 	}
 
 }
