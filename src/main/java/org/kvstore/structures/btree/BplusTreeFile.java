@@ -25,6 +25,7 @@ import java.util.Comparator;
 
 import org.kvstore.holders.DataHolder;
 import org.kvstore.io.FileBlockStore;
+import org.kvstore.io.FileBlockStore.CallbackSync;
 import org.kvstore.pool.BufferStacker;
 import org.kvstore.structures.bitset.SimpleBitSet;
 import org.kvstore.structures.hash.IntHashMap;
@@ -719,6 +720,14 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		finally {
 			releaseNodes();
 		}
+	}
+
+	/**
+	 * set callback called when buffers where synched to disk
+	 * @param callback
+	 */
+	public void setCallback(final CallbackSync callback) {
+		storage.setCallback(callback);
 	}
 
 	/**
