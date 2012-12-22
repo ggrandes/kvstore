@@ -110,7 +110,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	 * @throws IllegalAccessException
 	 */
 	public BplusTreeFile(final boolean autoTune, int b_size, final Class<K> typeK, final Class<V> typeV, final String fileName) throws InstantiationException, IllegalAccessException {
-		super(autoTune, b_size, typeK, typeV);
+		super(autoTune, false, b_size, typeK, typeV);
 		//
 		createReadCaches();
 		//

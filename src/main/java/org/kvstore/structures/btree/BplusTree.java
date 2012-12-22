@@ -111,13 +111,14 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 	/**
 	 * Create B+Tree
 	 * @param autoTune if true the tree try to find best b-order for leaf/internal nodes to fit in a block of b_size bytes
+	 * @param isMemory if true the tree is in Memory only
 	 * @param b_size if autoTune is true is the blockSize, if false is the b-order for leaf/internal nodes
 	 * @param typeK the class type of Keys
 	 * @param typeV the class type of Values
 	 * @throws InstantiationException
 	 * @throws IllegalAccessException
 	 */
-	public BplusTree(final boolean autoTune, int b_size, final Class<K> typeK, final Class<V> typeV) throws InstantiationException, IllegalAccessException {
+	public BplusTree(final boolean autoTune, final boolean isMemory, int b_size, final Class<K> typeK, final Class<V> typeV) throws InstantiationException, IllegalAccessException {
 		genericFactoryK = new GenericFactory<K>(typeK); 
 		genericFactoryV = new GenericFactory<V>(typeV);
 		factoryK = genericFactoryK.newInstance(); 
@@ -130,15 +131,17 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 			b_size += 1 - (b_size % 2); // round odd/impar
 			b_order_leaf = b_size;
 			b_order_internal = b_size;
-			blockSize = roundBlockSize(getMaxStructSize(), blockSize);
+			if (!isMemory)
+				blockSize = roundBlockSize(getMaxStructSize(), blockSize);
 		}
 		//
 		leafNodeFactory = createLeafNode();
 		internalNodeFactory = createInternalNode();
 		if (DEBUG || true) {
-			System.out.println(this.getClass().getName() + "::BplusTree() LeafNode b=" + b_order_leaf + " size=" + (leafNodeFactory.getStructMaxSize()));
-			System.out.println(this.getClass().getName() + "::BplusTree() InternalNode b=" + b_order_internal+ " size=" + (internalNodeFactory.getStructMaxSize()));
-			System.out.println(this.getClass().getName() + "::BplusTree() FileStorageBlock blocksize=" + blockSize);
+			System.out.println(this.getClass().getName() + "::BplusTree() LeafNode b=" + b_order_leaf + " size=" + (isMemory ? -1 : leafNodeFactory.getStructMaxSize()));
+			System.out.println(this.getClass().getName() + "::BplusTree() InternalNode b=" + b_order_internal+ " size=" + (isMemory ? -1 : internalNodeFactory.getStructMaxSize()));
+			if (!isMemory)
+				System.out.println(this.getClass().getName() + "::BplusTree() FileStorageBlock blocksize=" + blockSize);
 		}
 		validState = false;
 		//
@@ -908,6 +911,7 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 	 * @return String representing human readable tree
 	 */
 	private String toStringIterative() {
+		final String PADDING = "                                 ";
 		final StringBuilder sb = new StringBuilder();
 		int elements_debug_local_recounter = 0;
 		Node<K, V> node = null;
@@ -932,7 +936,7 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 				depth += (lastIsInternal ? +1 : -1);
 			}
 			lastIsInternal = !node.isLeaf();
-			sb.append("           ".substring(0, Math.max(depth-1, 0)));
+			sb.append(PADDING.substring(0, Math.min(PADDING.length(), Math.max(depth-1, 0))));
 			//
 			sb.append(node.toString()).append("\n");
 		}

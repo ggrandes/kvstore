@@ -39,15 +39,14 @@ public final class BplusTreeMemory<K extends DataHolder<K>, V extends DataHolder
 	/**
 	 * Create B+Tree in Memory
 	 * 
-	 * @param autoTune if true the tree try to find best b-order for leaf/internal nodes to fit in a block of b_size bytes
-	 * @param b_size if autoTune is true is the blockSize, if false is the b-order for leaf/internal nodes
+	 * @param b_order is the b-order for leaf/internal nodes
 	 * @param typeK the class type of Keys
 	 * @param typeV the class type of Values
 	 * @throws InstantiationException
 	 * @throws IllegalAccessException
 	 */
-	public BplusTreeMemory(final boolean autoTune, final int b_size, final Class<K> typeK, final Class<V> typeV) throws InstantiationException, IllegalAccessException {
-		super(autoTune, b_size, typeK, typeV);
+	public BplusTreeMemory(final int b_order, final Class<K> typeK, final Class<V> typeV) throws InstantiationException, IllegalAccessException {
+		super(false, true, b_order, typeK, typeV);
 		clearStates();
 		System.out.println("BplusTreeMemory.hashCode()=" + this.hashCode());
 	}
