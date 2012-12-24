@@ -22,7 +22,7 @@ import java.nio.channels.FileChannel;
 
 /**
  * File based Stream Storage
- * This class is NOT Thread-Safe
+ * This class is Thread-Safe
  *
  * @author Guillermo Grandes / guillermo.grandes[at]gmail.com
  */
@@ -119,7 +119,7 @@ public final class FileStreamStore {
 	 * Open file
 	 * @return true if valid state
 	 */
-	public boolean open() {
+	public synchronized boolean open() {
 		if (isOpen()) {
 			close();
 		}
@@ -142,7 +142,7 @@ public final class FileStreamStore {
 	/**
 	 * Close file
 	 */
-	public void close() {
+	public synchronized void close() {
 		if (validState) sync();
 		try { fcInput.close(); } catch(Exception ign) {}
 		try { rafInput.close(); } catch(Exception ign) {}
@@ -161,7 +161,7 @@ public final class FileStreamStore {
 	/**
 	 * @return true if file is open
 	 */
-	public boolean isOpen() {
+	public synchronized boolean isOpen() {
 		try { 
 			if ((fcInput != null) && (fcOutput != null)) {
 				return (fcInput.isOpen() && fcOutput.isOpen());
@@ -174,7 +174,7 @@ public final class FileStreamStore {
 	 * @return size of file in bytes
 	 * @see #getBlockSize()
 	 */
-	public long size() {
+	public synchronized long size() {
 		try {
 			return (file.length() + bufOutput.position());
 		}
@@ -189,7 +189,7 @@ public final class FileStreamStore {
 	/**
 	 * Truncate file
 	 */
-	public void clear() {
+	public synchronized void clear() {
 		if (!validState) throw new InvalidStateException();
 		try {
 			bufOutput.clear();
@@ -205,7 +205,7 @@ public final class FileStreamStore {
 	/**
 	 * Delete file
 	 */
-	public void delete() {
+	public synchronized void delete() {
 		bufOutput.clear();
 		close();
 		try { file.delete(); } catch(Exception ign) {}
@@ -217,21 +217,21 @@ public final class FileStreamStore {
 	 * set sync to disk flush buffer to true/false, default true
 	 * @param syncOnFlush
 	 */
-	public void setSyncOnFlush(final boolean syncOnFlush) {
+	public synchronized void setSyncOnFlush(final boolean syncOnFlush) {
 		this.syncOnFlush = syncOnFlush;
 	}
 	/**
 	 * set align blocks to buffer boundary to true/false, default true
 	 * @param alignBlocks
 	 */
-	public void setAlignBlocks(final boolean alignBlocks) {
+	public synchronized void setAlignBlocks(final boolean alignBlocks) {
 		this.alignBlocks = alignBlocks;
 	}
 	/**
 	 * set callback called when buffers where synched to disk
 	 * @param callback
 	 */
-	public void setCallback(final CallbackSync callback) {
+	public synchronized void setCallback(final CallbackSync callback) {
 		this.callback = callback;
 	}
 	
@@ -241,7 +241,7 @@ public final class FileStreamStore {
 	 * @param ByteBuffer
 	 * @return new offset (offset+headerlen+datalen)
 	 */
-	public long read(long offset, final ByteBuffer buf) {
+	public synchronized long read(long offset, final ByteBuffer buf) {
 		if (!validState) throw new InvalidStateException();
 		try {
 			int readed;
@@ -299,7 +299,7 @@ public final class FileStreamStore {
 	 * @param buf ByteBuffer to write
 	 * @return long offset where buffer begin was write or -1 if error
 	 */
-	public long write(final ByteBuffer buf) {
+	public synchronized long write(final ByteBuffer buf) {
 		if (!validState) throw new InvalidStateException();
 		final int packet_size = (HEADER_LEN + buf.limit()); // short + int + data
 		final boolean useDirectIO = (packet_size > (1<<bits));
@@ -411,7 +411,7 @@ public final class FileStreamStore {
 	 * Forces any updates to this file to be written to the storage device that contains it.
 	 * @return false if exception occur 
 	 */
-	public boolean sync() {
+	public synchronized boolean sync() {
 		if (!validState) throw new InvalidStateException();
 		try { 
 			flushBuffer();
