@@ -46,7 +46,7 @@ public final class BooleanHolder extends DataHolder<BooleanHolder> {
 	// ========= Basic Object methods =========
 
 	public String toString() {
-		return (value ? "TRUE" : "FALSE");
+		return (value ? "true" : "false");
 	}
 
 	public int hashCode() {
