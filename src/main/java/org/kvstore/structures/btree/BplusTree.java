@@ -634,6 +634,15 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 	}
 
 	/**
+	 * Returns true if this tree contains the specified key.
+	 * @param key to find
+	 * @return true if found
+	 */
+	public boolean containsKey(final K key) {
+		return (get(key) != null);
+	}
+	
+	/**
 	 * Find a Key in the Tree
 	 * @param key to find
 	 * @return Value found or null if not
