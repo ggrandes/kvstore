@@ -173,7 +173,9 @@ public abstract class Node<K extends DataHolder<K>, V extends DataHolder<V>> {
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public static Node deserialize(final ByteBuffer buf, final BplusTree tree) {
 		final int id = buf.getInt();
-		if (id == NULL_ID) throw new RuntimeException("Invalid nodeid in Node.deserialize() id=NULL_ID");
+		if (id == NULL_ID) {
+			throw InvalidNodeID.NULL_ID;
+		}
 		final boolean isLeaf = isLeaf(id);
 		final Node node = (isLeaf ? tree.createLeafNode() : tree.createInternalNode());
 		node.id = id;
@@ -223,4 +225,11 @@ public abstract class Node<K extends DataHolder<K>, V extends DataHolder<V>> {
 	 */
 	abstract protected void shiftRL(final InternalNode<K, V> nodeParent, final int slot, final Node<K, V> nodeFROM);
 
+	public static class InvalidNodeID extends RuntimeException {
+		private static final long serialVersionUID = 42L;
+		public static final InvalidNodeID NULL_ID = new InvalidNodeID("Invalid Node id=NULL_ID");
+		public InvalidNodeID(final String error) {
+			super(error);
+		}
+	}
 }
