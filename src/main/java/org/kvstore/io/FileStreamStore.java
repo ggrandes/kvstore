@@ -80,6 +80,10 @@ public final class FileStreamStore {
 	 */
 	private boolean validState = false;
 	/**
+	 * flush buffer on every write?
+	 */
+	private boolean flushOnWrite = false;
+	/**
 	 * sync to disk on flushbuffer?
 	 */
 	private boolean syncOnFlush = true;
@@ -214,6 +218,13 @@ public final class FileStreamStore {
 	// ========= Operations =========
 
 	/**
+	 * set flush buffer on write to true/false, default false
+	 * @param syncOnFlush
+	 */
+	public synchronized void setFlushOnWrite(final boolean flushOnWrite) {
+		this.flushOnWrite = flushOnWrite;
+	}
+	/**
 	 * set sync to disk flush buffer to true/false, default true
 	 * @param syncOnFlush
 	 */
@@ -341,6 +352,8 @@ public final class FileStreamStore {
 				bufOutput.put(buf); // Data Body
 				// Increment offset of buffered data (header + user-data)
 				offsetOutputUncommited += packet_size;
+				if (flushOnWrite)
+					flushBuffer();
 			}
 			//
 			return offset;
@@ -388,6 +401,22 @@ public final class FileStreamStore {
 		}
 	}
 
+	/**
+	 * Flush buffer to file
+	 * @return false if exception occur 
+	 */
+	public synchronized boolean flush() {
+		if (!validState) throw new InvalidStateException();
+		try { 
+			flushBuffer();
+			return true;
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+		}
+		return false;
+	}
+	
 	/**
 	 * Write uncommited data to disk
 	 * @throws IOException
