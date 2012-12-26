@@ -23,7 +23,7 @@ import java.lang.reflect.Array;
  * @author Guillermo Grandes / guillermo.grandes[at]gmail.com
  */
 public class GenericFactory<T> {
-	private final Class<T> type;
+	public final Class<T> type;
 
 	public GenericFactory(final Class<T> type) {
 		this.type = type;
