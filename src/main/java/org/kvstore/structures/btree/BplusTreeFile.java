@@ -1055,6 +1055,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		//
 		writeMetaData(false);
 		storage.sync();
+		redoQueue.clear();
 		redoStore.clear();
 		if (DEBUG) {
 			StringBuilder sb = new StringBuilder();
