@@ -198,6 +198,9 @@ public final class FileStreamStore {
 		try {
 			bufOutput.clear();
 			fcOutput.position(0).truncate(0).force(true);
+			offsetOutputUncommited = offsetOutputCommited = fcOutput.position();
+			if (callback != null)
+				callback.synched(offsetOutputCommited);
 			close();
 			open();
 		}
