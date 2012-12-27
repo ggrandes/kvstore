@@ -20,12 +20,18 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Date;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.kvstore.holders.DataHolder;
 import org.kvstore.io.FileBlockStore;
 import org.kvstore.io.FileBlockStore.CallbackSync;
+import org.kvstore.io.FileStreamStore;
 import org.kvstore.pool.BufferStacker;
 import org.kvstore.structures.bitset.SimpleBitSet;
 import org.kvstore.structures.hash.IntHashMap;
@@ -73,6 +79,10 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	 */
 	private final File fileFreeBlocks;
 	/**
+	 * File for redo
+	 */
+	private final File fileRedo;
+	/**
 	 * Storage Object
 	 */
 	private final FileBlockStore storage;
@@ -97,8 +107,34 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	 * Bitset with id of dirty blocks pending to commit
 	 */
 	private SimpleBitSet dirtyCheck = new SimpleBitSet();
-	//
+	/**
+	 * Redo Storage
+	 */
+	private final FileStreamStore redoStore;
+	/**
+	 * Use Redo?
+	 */
+	private boolean useRedo = true;
+	/**
+	 * Use Dedicated Thread for Redo?
+	 */
+	private boolean useRedoThread = false;
 
+	/**
+	 * Redo Queue for Dedicated Thread
+	 */
+	final ArrayBlockingQueue<ByteBuffer> redoQueue = new ArrayBlockingQueue<ByteBuffer>(0x1);
+	/**
+	 * Redo Thread
+	 */
+	private Thread redoThread = null;
+	private AtomicBoolean doShutdownRedoThread = new AtomicBoolean();
+
+	// Remember parameters for recovery
+	private final transient boolean autoTune;
+	private final transient int b_size;
+	private final transient String fileName;
+	
 	/**
 	 * Create B+Tree in File
 	 * 
@@ -113,24 +149,31 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	public BplusTreeFile(final boolean autoTune, int b_size, final Class<K> typeK, final Class<V> typeV, final String fileName) throws InstantiationException, IllegalAccessException {
 		super(autoTune, false, b_size, typeK, typeV);
 		//
+		this.autoTune = autoTune;
+		this.b_size = b_size;
+		this.fileName = fileName;
+		//
 		createReadCaches();
 		//
 		fileStorage = new File(fileName + ".data");
 		fileFreeBlocks = new File(fileName + ".free");
+		fileRedo = new File(fileName + ".redo");
 		//
 		bufstack = BufferStacker.getInstance(blockSize, isDirect);
 		freeBlocks = new SimpleBitSet();
 		storage = new FileBlockStore(fileStorage.getAbsolutePath(), blockSize, isDirect);
+		redoStore = new FileStreamStore(fileRedo.getAbsolutePath(), blockSize<<1);
+		redoStore.setSyncOnFlush(false);
+		redoStore.setFlushOnWrite(true);
 		validState = false;
-		System.out.println("BplusTreeFile.hashCode()=" + this.hashCode());
-		//
 	}
 
 	@Override
 	protected boolean clearStorage() {
 		// Reset Storage
 		storage.delete();
-		return storage.open();
+		redoStore.delete();
+		return (storage.open() && redoStore.open());
 	}
 
 	@Override
@@ -397,7 +440,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		// Clear Caches
 		clearReadCaches();
 		clearWriteCaches();
-		if (isClean) {
+		if (isClean && fileFreeBlocks.exists()) {
 			try {
 				final SimpleBitSet newFreeBlocks = SimpleBitSet.deserializeFromFile(fileFreeBlocks);
 				freeBlocks = newFreeBlocks;
@@ -419,41 +462,149 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	}
 
 	/**
+	 * Recovery
+	 * @return boolean if all right
+	 * @throws InvalidDataException if metadata is invalid
+	 * @throws IllegalAccessException 
+	 * @throws InstantiationException 
+	 */
+	public synchronized boolean recovery() throws InstantiationException, IllegalAccessException {
+		if (storage.isOpen() || redoStore.isOpen()) {
+			throw new InvalidStateException();
+		}
+		if (!storage.open() || !redoStore.open()) {
+			storage.close();
+			redoStore.close();
+			return false;
+		}
+		//
+		final BplusTreeFile<K, V> treeTmp = new BplusTreeFile<K, V>(autoTune, b_size, getGenericFactoryK().type, getGenericFactoryV().type, fileName + ".recover");
+		final K factoryK = factoryK();
+		final V factoryV = factoryV();
+		final int blocks = storage.sizeInBlocks();
+		//
+		treeTmp.clear();
+		treeTmp.setUseRedo(false);
+		//
+		// Reconstruct Tree, Scan BlockStore for data
+		System.out.println("Trying to Recover Blocks: " + blocks);
+		for (int index = 1; index < blocks; index++) {
+			try {
+				if ((index % 100) == 0)
+					System.out.println("Recovering block [" + index + "/" + blocks + "]");
+				final Node<K, V> node = getNodeFromStore(index); // read
+				if (node.isLeaf()) {
+					final LeafNode<K, V> leafNode = (LeafNode<K, V>) node;
+					for (int i = 0; i < node.allocated; i++) {
+						final K key = leafNode.keys[i];
+						final V value = leafNode.values[i];
+						treeTmp.put(key, value);
+					}
+				}
+			}
+			catch (Node.InvalidNodeID e) {
+				// Skip
+			}
+		}
+		//
+		// Apply Redo Store
+		final ByteBuffer buf = bufstack.pop();
+		final long size = redoStore.size();
+		long offset = 0;
+		int count = 1;
+		while (offset < size) {
+			buf.clear();
+			if ((offset = redoStore.read(offset, buf)) < 0) {
+				break;
+			}
+			if ((count++ % 100) == 0)
+				System.out.println("Applying Redo [offset=" + offset + "]");
+			final int op = buf.get();
+			final K key = factoryK.deserialize(buf);
+			switch (op) {
+			case 0xA: // PUT
+				final V value = factoryV.deserialize(buf);
+				treeTmp.put(key, value);
+				break;
+			case 0xB: // REMOVE
+				treeTmp.remove(key);
+				break;
+			}
+		}
+		bufstack.push(buf);
+		treeTmp.close();
+		storage.close();
+		redoStore.close();
+		// Rename data files
+		final String ts = getTimeStamp();
+		if (renameFileToBroken(fileStorage, ts) &&
+				renameFileToBroken(fileRedo, ts)) {
+			// Rename tmp to good
+			treeTmp.fileStorage.renameTo(fileStorage);
+			// Remove tmp redo
+			treeTmp.fileRedo.delete();
+			// Remove tmp free blocks
+			treeTmp.fileFreeBlocks.delete();
+			// Remove broken free blocks
+			fileFreeBlocks.delete();
+			return true;
+		}
+		return false;
+	}
+
+	/**
 	 * Open file
 	 * @return boolean if all right
 	 * @throws InvalidDataException if metadata is invalid
 	 */
 	public synchronized boolean open() throws InvalidDataException {
 		boolean allRight = false;
-		if (storage.isOpen()) {
+		boolean isNew = false;
+		if (storage.isOpen() || redoStore.isOpen()) {
 			throw new InvalidStateException();
 		}
 		storage.open();
+		redoStore.open();
 		try {
 			if (storage.sizeInBlocks() == 0) {
 				clearStates();
+				isNew = true;
 			}
 			try {
 				boolean isClean = readMetaData();
 				//System.out.println(this.hashCode() + "::open() clean=" + isClean);
-				if (isClean) {
+				if (isClean && !isNew) {
 					if (writeMetaData(false)) {
 						populateCache();
 						allRight = true;
 					}
 				}
+				else if (!isNew) {
+					// Broken
+					throw new InvalidDataException("NEED RECOVERY");
+				}
 			}
 			catch (InvalidDataException e) {
 				validState = false;
 				storage.close();
+				redoStore.close();
 				throw e;
 			}
-			populateCache();
+			//populateCache(); // twice?
 		} finally {
 			releaseNodes();
 		}
 		validState = true;
 		return allRight;
+	}
+	
+	private static String getTimeStamp() {
+		final SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd.HHmmss");
+		return sdf.format(new Date());
+	}
+	
+	private static boolean renameFileToBroken(final File orig, final String ts) {
+		return orig.renameTo(new File(orig.getAbsolutePath() + ".broken." + ts));
 	}
 
 	/**
@@ -461,15 +612,144 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	 */
 	public synchronized void close() {
 		if (storage.isOpen()) {
+			if (useRedoThread && (redoThread != null)) {
+				stopRedoThread(redoThread);
+			}
 			sync();
 			writeMetaData(true);
 			if (enableDirtyCheck) System.out.println("dirtyCheck=" + dirtyCheck);
 		}
 		storage.close();
+		redoStore.close();
 		clearReadCaches();
 		clearWriteCaches();
 		validState = false;
 		//System.out.println(this.hashCode() + "::close() done");
+	}
+
+	/**
+	 * Use Redo system?
+	 * @param useRedo (default true)
+	 */
+	public synchronized void setUseRedo(final boolean useRedo) {
+		if (this.useRedo && !useRedo) { // Remove Redo
+			redoStore.clear();
+		}
+		this.useRedo = useRedo;
+	}
+	
+	/**
+	 * Use Dedicated Thread for Redo?
+	 * @param useRedoThread (default false)
+	 */
+	public synchronized void setUseRedoThread(final boolean useRedoThread) {
+		if (this.useRedoThread && !useRedoThread) { // Stop Redo Thread
+			if (redoThread != null)
+				stopRedoThread(redoThread);
+		}
+		this.useRedoThread = useRedoThread;
+	}
+	
+	private void createRedoThread() {
+		if (useRedoThread && (redoThread == null)) {
+			redoThread = new Thread(new Runnable() {
+				@Override
+				public void run() {
+					try  {
+						doShutdownRedoThread.set(false);
+						ByteBuffer buf = null; 
+						while (!doShutdownRedoThread.get()) {
+							buf = redoQueue.poll(1000, TimeUnit.MILLISECONDS);
+							if (buf != null)
+								redoStore.write(buf);
+						}
+						endProcess();
+					}
+					catch (InterruptedException ie) {
+						endProcess();
+						Thread.currentThread().interrupt(); // Preserve
+					}
+					catch (Exception e) {
+						e.printStackTrace();
+					}
+					finally {
+						redoThread = null;
+					}
+				}
+				private final void endProcess() {
+					if (!redoQueue.isEmpty()) {
+						ByteBuffer buf = null;
+						while ((buf = redoQueue.poll()) != null) {
+							redoStore.write(buf);
+						}
+					}
+					redoStore.sync();
+				}
+			});
+			redoThread.start();
+		}
+		
+	}
+	
+	private void stopRedoThread(final Thread localRedoThread) {
+		try {
+			doShutdownRedoThread.set(true);
+			localRedoThread.join(3000);
+			localRedoThread.interrupt();
+			localRedoThread.join(30000);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * submit put to redo
+	 * @param key
+	 * @param value
+	 */
+	@Override
+	protected void submitRedoPut(final K key, final V value) {
+		if (!useRedo) return;
+		createRedoThread();
+		final ByteBuffer buf = (useRedoThread ? ByteBuffer.allocate(1+key.byteLength()+value.byteLength()) : bufstack.pop());
+		buf.put((byte) 0xA); // PUT
+		key.serialize(buf);
+		value.serialize(buf);
+		buf.flip();
+		if (useRedoThread) {
+			try {
+				redoQueue.put(buf);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		} else {
+			redoStore.write(buf);
+			bufstack.push(buf);
+		}
+	}
+
+	/**
+	 * submit remove to redo
+	 * @param key
+	 */
+	@Override
+	protected void submitRedoRemove(final K key) {
+		if (!useRedo) return;
+		createRedoThread();
+		final ByteBuffer buf = (useRedoThread ? ByteBuffer.allocate(1+key.byteLength()) : bufstack.pop());
+		buf.put((byte) 0xB); // REMOVE
+		key.serialize(buf);
+		buf.flip();
+		if (useRedoThread) {
+			try {
+				redoQueue.put(buf);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		} else {
+			redoStore.write(buf);
+			bufstack.push(buf);
+		}
 	}
 
 	/**
@@ -632,8 +912,13 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		final long ts = System.currentTimeMillis();
 		for (int index = 1; ((index < storageBlock) && (cacheInternalNodes.size() < readCacheInternal) && (cacheLeafNodes.size() < readCacheLeaf)); index++) {
 			if (freeBlocks.get(index)) continue; // skip free
-			final Node<K, V> node = getNodeFromStore(index); // read
-			(node.isLeaf() ? cacheLeafNodes : cacheInternalNodes).put(node.id, node);
+			try {
+				final Node<K, V> node = getNodeFromStore(index); // read
+				(node.isLeaf() ? cacheLeafNodes : cacheInternalNodes).put(node.id, node);
+			}
+			catch (Node.InvalidNodeID e) {
+				freeBlocks.set(index); // mark index as free
+			}
 		}
 		System.out.println("Populated read cache ts=" + (System.currentTimeMillis() - ts) + " blocks=" + storageBlock + " elements=" + elements);
 	}
@@ -769,6 +1054,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		//
 		//writeMetaData(false); // El rendimiento cae bastante
 		storage.sync();
+		redoStore.clear();
 		if (DEBUG) {
 			StringBuilder sb = new StringBuilder();
 			sb

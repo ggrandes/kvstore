@@ -90,6 +90,16 @@ public final class BplusTreeMemory<K extends DataHolder<K>, V extends DataHolder
 	}
 
 	@Override
+	protected void submitRedoPut(final K key, final V value) {
+		// Nothing
+	}
+
+	@Override
+	protected void submitRedoRemove(final K key) {
+		// Nothing
+	}
+
+	@Override
 	protected boolean clearStorage() {
 		storeNodes.clear();
 		return true;

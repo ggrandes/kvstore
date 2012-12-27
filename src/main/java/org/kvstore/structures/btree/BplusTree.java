@@ -144,8 +144,6 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 				System.out.println(this.getClass().getName() + "::BplusTree() FileStorageBlock blocksize=" + blockSize);
 		}
 		validState = false;
-		//
-		System.out.println("BplusTree.hashCode()=" + this.hashCode());
 	}
 
 	/**
@@ -641,7 +639,7 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 	public boolean containsKey(final K key) {
 		return (get(key) != null);
 	}
-	
+
 	/**
 	 * Find a Key in the Tree
 	 * @param key to find
@@ -674,6 +672,7 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 		if (key == null) return false;
 		try {
 			if (DEBUG2) System.out.println("trying remove key=" + key);
+			submitRedoRemove(key);
 			if (removeIterative(key)) { // removeRecursive(key, rootIdx)
 				elements--;
 				Node<K, V> nodeRoot = getNode(rootIdx);
@@ -764,6 +763,19 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 	}
 
 	/**
+	 * submit put to redo
+	 * @param key
+	 * @param value
+	 */
+	abstract protected void submitRedoPut(final K key, final V value);
+
+	/**
+	 * submit remove to redo
+	 * @param value
+	 */
+	abstract protected void submitRedoRemove(final K key);
+
+	/**
 	 * Put the value in the tree (if key already exists, update value)
 	 * @param key
 	 * @param value
@@ -772,7 +784,9 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 	public synchronized boolean put(final K key, final V value) {
 		if (!validState) throw new InvalidStateException();
 		if (key == null) return false;
+		if (value == null) return false;
 		try {
+			submitRedoPut(key, value);
 			Node<K, V> splitedNode;
 			try {
 				splitedNode = putIterative(key, value); // putRecursive(key, value, rootIdx);
