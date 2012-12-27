@@ -134,7 +134,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	private final transient boolean autoTune;
 	private final transient int b_size;
 	private final transient String fileName;
-	
+
 	/**
 	 * Create B+Tree in File
 	 * 
@@ -391,7 +391,8 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		buf.putInt(MAGIC_2);
 		buf.flip();
 		isOK = storage.set(0, buf);
-		storage.sync();
+		if (isClean)
+			storage.sync();
 		try {
 			if (isClean) {
 				SimpleBitSet.serializeToFile(fileFreeBlocks, freeBlocks);
@@ -597,12 +598,12 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		validState = true;
 		return allRight;
 	}
-	
+
 	private static String getTimeStamp() {
 		final SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd.HHmmss");
 		return sdf.format(new Date());
 	}
-	
+
 	private static boolean renameFileToBroken(final File orig, final String ts) {
 		return orig.renameTo(new File(orig.getAbsolutePath() + ".broken." + ts));
 	}
@@ -637,7 +638,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		}
 		this.useRedo = useRedo;
 	}
-	
+
 	/**
 	 * Use Dedicated Thread for Redo?
 	 * @param useRedoThread (default false)
@@ -649,7 +650,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		}
 		this.useRedoThread = useRedoThread;
 	}
-	
+
 	private void createRedoThread() {
 		if (useRedoThread && (redoThread == null)) {
 			redoThread = new Thread(new Runnable() {
@@ -688,9 +689,9 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			});
 			redoThread.start();
 		}
-		
+
 	}
-	
+
 	private void stopRedoThread(final Thread localRedoThread) {
 		try {
 			doShutdownRedoThread.set(true);
@@ -701,7 +702,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			e.printStackTrace();
 		}
 	}
-	
+
 	/**
 	 * submit put to redo
 	 * @param key
@@ -1052,7 +1053,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			if (!dirtyInternalNodes.isEmpty()) dirtyInternalNodes.clear(false); // Clear without shrink
 		}
 		//
-		//writeMetaData(false); // El rendimiento cae bastante
+		writeMetaData(false);
 		storage.sync();
 		redoStore.clear();
 		if (DEBUG) {
