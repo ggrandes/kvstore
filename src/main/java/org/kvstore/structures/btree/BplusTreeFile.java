@@ -402,7 +402,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			}
 		}
 		catch(IOException e) {
-			e.printStackTrace();
+			e.printStackTrace(System.out);
 		}
 		if (DEBUG) System.out.println(this.getClass().getName() + "::writeMetaData() elements=" + elements + " rootIdx=" + rootIdx + " lastNodeId=" + storageBlock + " freeBlocks=" + freeBlocks.cardinality());
 		return isOK;
@@ -447,7 +447,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 				freeBlocks = newFreeBlocks;
 			}
 			catch(IOException e) {
-				e.printStackTrace();
+				e.printStackTrace(System.out);
 			}
 		}
 		return isClean;
@@ -465,7 +465,6 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	/**
 	 * Recovery
 	 * @return boolean if all right
-	 * @throws InvalidDataException if metadata is invalid
 	 * @throws IllegalAccessException 
 	 * @throws InstantiationException 
 	 */
@@ -591,7 +590,6 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 				redoStore.close();
 				throw e;
 			}
-			//populateCache(); // twice?
 		} finally {
 			releaseNodes();
 		}
@@ -634,6 +632,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	 */
 	public synchronized void setUseRedo(final boolean useRedo) {
 		if (this.useRedo && !useRedo) { // Remove Redo
+			redoQueue.clear();
 			redoStore.clear();
 		}
 		this.useRedo = useRedo;
@@ -671,7 +670,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 						Thread.currentThread().interrupt(); // Preserve
 					}
 					catch (Exception e) {
-						e.printStackTrace();
+						e.printStackTrace(System.out);
 					}
 					finally {
 						redoThread = null;
@@ -699,7 +698,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			localRedoThread.interrupt();
 			localRedoThread.join(30000);
 		} catch (Exception e) {
-			e.printStackTrace();
+			e.printStackTrace(System.out);
 		}
 	}
 
@@ -721,7 +720,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			try {
 				redoQueue.put(buf);
 			} catch (InterruptedException e) {
-				e.printStackTrace();
+				e.printStackTrace(System.out);
 			}
 		} else {
 			redoStore.write(buf);
@@ -745,7 +744,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			try {
 				redoQueue.put(buf);
 			} catch (InterruptedException e) {
-				e.printStackTrace();
+				e.printStackTrace(System.out);
 			}
 		} else {
 			redoStore.write(buf);
