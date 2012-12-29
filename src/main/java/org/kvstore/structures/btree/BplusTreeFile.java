@@ -1021,24 +1021,28 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	@SuppressWarnings("unchecked")
 	private void privateSync(final boolean syncInternal) {
 		final long ts = System.currentTimeMillis();
-		Node<K, V>[] dirtyBlocks;
+		boolean isDirty = false;
 		//
 		// Write Leaf Nodes
-		dirtyBlocks = dirtyLeafNodes.getValues();
-		Arrays.sort(dirtyBlocks, dirtyComparatorByID);
-		for (Node<K, V> node : dirtyBlocks) {
-			if (node == null) break;
-			//if (DEBUG) System.out.println("node.id=" + node.id);
-			dirtyLeafNodes.remove(node.id);
-			putNodeToStore(node);
-			if (!node.isDeleted()) { 
-				cacheLeafNodes.put(node.id, node);
+		if (!dirtyLeafNodes.isEmpty()) {
+			isDirty = true;
+			final Node<K, V>[] dirtyBlocks = dirtyLeafNodes.getValues();
+			Arrays.sort(dirtyBlocks, dirtyComparatorByID);
+			for (Node<K, V> node : dirtyBlocks) {
+				if (node == null) break;
+				//if (DEBUG) System.out.println("node.id=" + node.id);
+				dirtyLeafNodes.remove(node.id);
+				putNodeToStore(node);
+				if (!node.isDeleted()) { 
+					cacheLeafNodes.put(node.id, node);
+				}
 			}
+			if (!dirtyLeafNodes.isEmpty()) dirtyLeafNodes.clear(false); // Clear without shrink
 		}
-		if (!dirtyLeafNodes.isEmpty()) dirtyLeafNodes.clear(false); // Clear without shrink
 		// Write Internal Nodes
-		if (syncInternal) {
-			dirtyBlocks = dirtyInternalNodes.getValues();
+		if (syncInternal && !dirtyInternalNodes.isEmpty()) {
+			isDirty = true;
+			final Node<K, V>[] dirtyBlocks = dirtyInternalNodes.getValues();
 			Arrays.sort(dirtyBlocks, dirtyComparatorByID);
 			for (Node<K, V> node : dirtyBlocks) {
 				if (node == null) break;
@@ -1052,10 +1056,12 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			if (!dirtyInternalNodes.isEmpty()) dirtyInternalNodes.clear(false); // Clear without shrink
 		}
 		//
-		writeMetaData(false);
-		storage.sync();
-		redoQueue.clear();
-		redoStore.clear();
+		if (isDirty) {
+			writeMetaData(false);
+			storage.sync();
+			redoQueue.clear();
+			redoStore.clear();
+		}
 		if (DEBUG) {
 			StringBuilder sb = new StringBuilder();
 			sb
