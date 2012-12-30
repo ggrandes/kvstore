@@ -190,6 +190,52 @@ public final class FileStreamStore {
 		return -1;
 	}
 
+	/**
+	 * check if empty
+	 * @return true if empty
+	 */
+	public synchronized boolean isEmpty() {
+		if (!validState) throw new InvalidStateException();
+		return (size() == 0);
+	}
+	
+	/**
+	 * Read end of valid and check last magic footer
+	 * @return true if valid
+	 */
+	public synchronized boolean isValid() {
+		if (!validState) throw new InvalidStateException();
+		final long size = size();
+		if (size == 0) return true;
+		try {
+			final long offset = (size - FOOTER_LEN);
+			if (offset < 0) return false;
+			if (offset >= offsetOutputCommited) {
+				if (bufOutput.position() > 0) {
+					System.out.println("WARN: autoflush forced");
+					flushBuffer();
+				}
+			}
+			bufInput.clear();
+			bufInput.limit(FOOTER_LEN);
+			final int readed = fcInput.position(offset).read(bufInput);
+			if (readed < FOOTER_LEN) {
+				return false;
+			}
+			bufInput.flip();
+			final int footer = bufInput.get(); 	// Footer (byte)
+			if (footer != MAGIC_FOOT) {
+				System.out.println("MAGIC FOOT fake=" + Integer.toHexString(footer) + " expected=" + Integer.toHexString(MAGIC_FOOT));
+				return false;
+			}
+			return true;
+		}
+		catch(Exception e) {
+			e.printStackTrace(System.out);
+		}
+		return false;
+	}
+	
 	// ========= Destroy =========
 
 	/**
