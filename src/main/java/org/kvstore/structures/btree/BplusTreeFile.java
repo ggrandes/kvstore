@@ -36,6 +36,7 @@ import org.kvstore.pool.BufferStacker;
 import org.kvstore.structures.bitset.SimpleBitSet;
 import org.kvstore.structures.hash.IntHashMap;
 import org.kvstore.structures.hash.IntLinkedHashMap;
+import org.kvstore.utils.HexStrings;
 
 /**
  * Implementation of B+Tree in File
@@ -453,7 +454,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		return isClean;
 	}
 
-	// ===================================== Store Managemenet
+	// ===================================== Store Management
 
 	/**
 	 * Create/Clear file
@@ -464,11 +465,12 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 
 	/**
 	 * Recovery
+	 * @param forceFullRecovery to force full recovery and disallow incremental recovery
 	 * @return boolean if all right
-	 * @throws IllegalAccessException 
-	 * @throws InstantiationException 
+	 * @throws IllegalAccessException
+	 * @throws InstantiationException
 	 */
-	public synchronized boolean recovery() throws InstantiationException, IllegalAccessException {
+	public synchronized boolean recovery(final boolean forceFullRecovery) throws InstantiationException, IllegalAccessException {
 		if (storage.isOpen() || redoStore.isOpen()) {
 			throw new InvalidStateException();
 		}
@@ -477,38 +479,71 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			redoStore.close();
 			return false;
 		}
-		//
-		final BplusTreeFile<K, V> treeTmp = new BplusTreeFile<K, V>(autoTune, b_size, getGenericFactoryK().type, getGenericFactoryV().type, fileName + ".recover");
-		final K factoryK = factoryK();
-		final V factoryV = factoryV();
-		final int blocks = storage.sizeInBlocks();
-		//
-		treeTmp.clear();
-		treeTmp.setUseRedo(false);
-		//
-		// Reconstruct Tree, Scan BlockStore for data
-		System.out.println("Trying to Recover Blocks: " + blocks);
-		for (int index = 1; index < blocks; index++) {
-			try {
-				if ((index % 100) == 0)
-					System.out.println("Recovering block [" + index + "/" + blocks + "]");
-				final Node<K, V> node = getNodeFromStore(index); // read
-				if (node.isLeaf()) {
-					final LeafNode<K, V> leafNode = (LeafNode<K, V>) node;
-					for (int i = 0; i < node.allocated; i++) {
-						final K key = leafNode.keys[i];
-						final V value = leafNode.values[i];
-						treeTmp.put(key, value);
-					}
+		final ByteBuffer buf = bufstack.pop();
+		final long tsbegin = System.currentTimeMillis();
+		// Try to read Redo Meta Sync State to choose recovery mode
+		boolean recoveryIncremental = false;
+		if (!forceFullRecovery) {
+			buf.clear();
+			if (redoStore.isEmpty()) {
+				recoveryIncremental = true;
+			} else if (redoStore.readFromEnd(4, buf) < 0) {
+				if (redoStore.isValid())
+					recoveryIncremental = true;
+			} else {
+				final int head = buf.get();
+				final int value1 = buf.get();
+				final int value2 = buf.get();
+				final int foot = buf.get();
+				if ((head == 0xC) && (head == foot) && (value1 == value2)) {
+					System.out.println("Meta Sync State=" + HexStrings.nativeAsHex((byte)head));
 				}
 			}
-			catch (Node.InvalidNodeID e) {
-				// Skip
+		}
+		System.out.println(recoveryIncremental ? "Incremental Recovery Allowed" : "Full Recovery Needed");
+		//
+		final boolean oldUseRedo = useRedo;
+		final K factoryK = factoryK();
+		final V factoryV = factoryV();
+		BplusTreeFile<K, V> treeTmp = null; 
+		if (recoveryIncremental) {
+			System.out.println("Recovery in Incremental Mode (Replay Redo)");
+			//
+			treeTmp = this;
+			useRedo = false; 	// HACK (don't call setUseRedo, destructive)
+			validState = true; 	// HACK
+		} else {
+			System.out.println("Recovery in Full Mode (Scan datafiles)");
+			//
+			final int blocks = storage.sizeInBlocks();
+			treeTmp = new BplusTreeFile<K, V>(autoTune, b_size, getGenericFactoryK().type, getGenericFactoryV().type, fileName + ".recover");
+			//
+			treeTmp.clear();
+			treeTmp.setUseRedo(false);
+			//
+			// Reconstruct Tree, Scan BlockStore for data
+			System.out.println("Blocks to Scan: " + blocks);
+			for (int index = 1; index < blocks; index++) {
+				try {
+					if ((index % 100) == 0)
+						System.out.println("Recovering block [" + index + "/" + blocks + "]");
+					final Node<K, V> node = getNodeFromStore(index); // read
+					if (node.isLeaf()) {
+						final LeafNode<K, V> leafNode = (LeafNode<K, V>) node;
+						for (int i = 0; i < node.allocated; i++) {
+							final K key = leafNode.keys[i];
+							final V value = leafNode.values[i];
+							treeTmp.put(key, value);
+						}
+					}
+				}
+				catch (Node.InvalidNodeID e) {
+					// Skip
+				}
 			}
 		}
 		//
 		// Apply Redo Store
-		final ByteBuffer buf = bufstack.pop();
 		final long size = redoStore.size();
 		long offset = 0;
 		int count = 1;
@@ -519,22 +554,31 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			}
 			if ((count++ % 100) == 0)
 				System.out.println("Applying Redo [offset=" + offset + "]");
-			final int op = buf.get();
-			final K key = factoryK.deserialize(buf);
-			switch (op) {
+			final int head = buf.get();
+			switch (head) {
 			case 0xA: // PUT
-				final V value = factoryV.deserialize(buf);
-				treeTmp.put(key, value);
+				treeTmp.put(factoryK.deserialize(buf), factoryV.deserialize(buf));
 				break;
 			case 0xB: // REMOVE
-				treeTmp.remove(key);
+				treeTmp.remove(factoryK.deserialize(buf));
+				break;
+			case 0xC: // META
+				System.out.println("Meta type=" + HexStrings.nativeAsHex(buf.get()));
+				break;
+			default: // Unknown
+				System.out.println("Redo Operation=" + HexStrings.nativeAsHex((byte)head) + " Unknown");
 				break;
 			}
 		}
-		bufstack.push(buf);
 		treeTmp.close();
 		storage.close();
 		redoStore.close();
+		//
+		if (recoveryIncremental) {
+			useRedo = oldUseRedo; 	// HACK (don't call setUseRedo, destructive)
+			System.out.println("Incremental Recovery completed time=" + (System.currentTimeMillis() - tsbegin) + "ms");
+			return true;
+		}
 		// Rename data files
 		final String ts = getTimeStamp();
 		if (renameFileToBroken(fileStorage, ts) &&
@@ -547,8 +591,10 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			treeTmp.fileFreeBlocks.delete();
 			// Remove broken free blocks
 			fileFreeBlocks.delete();
+			System.out.println("Full Recovery completed time=" + (System.currentTimeMillis() - tsbegin) + "ms");
 			return true;
 		}
+		System.out.println("Full Recovery failed time=" + (System.currentTimeMillis() - tsbegin) + "ms");
 		return false;
 	}
 
@@ -711,10 +757,11 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	protected void submitRedoPut(final K key, final V value) {
 		if (!useRedo) return;
 		createRedoThread();
-		final ByteBuffer buf = (useRedoThread ? ByteBuffer.allocate(1+key.byteLength()+value.byteLength()) : bufstack.pop());
-		buf.put((byte) 0xA); // PUT
+		final ByteBuffer buf = (useRedoThread ? ByteBuffer.allocate(2+key.byteLength()+value.byteLength()) : bufstack.pop());
+		buf.put((byte) 0xA); // PUT HEADER
 		key.serialize(buf);
 		value.serialize(buf);
+		buf.put((byte) 0xA); // PUT FOOTER
 		buf.flip();
 		if (useRedoThread) {
 			try {
@@ -736,9 +783,34 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	protected void submitRedoRemove(final K key) {
 		if (!useRedo) return;
 		createRedoThread();
-		final ByteBuffer buf = (useRedoThread ? ByteBuffer.allocate(1+key.byteLength()) : bufstack.pop());
-		buf.put((byte) 0xB); // REMOVE
+		final ByteBuffer buf = (useRedoThread ? ByteBuffer.allocate(2+key.byteLength()) : bufstack.pop());
+		buf.put((byte) 0xB); // REMOVE HEADER
 		key.serialize(buf);
+		buf.put((byte) 0xB); // REMOVE FOOTER
+		buf.flip();
+		if (useRedoThread) {
+			try {
+				redoQueue.put(buf);
+			} catch (InterruptedException e) {
+				e.printStackTrace(System.out);
+			}
+		} else {
+			redoStore.write(buf);
+			bufstack.push(buf);
+		}
+	}
+
+	/**
+	 * submit metadata to redo
+	 * @param futureUse ignored (byte in the range of 0-0x7F)
+	 */
+	@Override
+	protected void submitRedoMeta(final int futureUse) {
+		if (!useRedo) return;
+//		if (useRedo) return; // XXX: FAKE
+		createRedoThread();
+		final ByteBuffer buf = (useRedoThread ? ByteBuffer.allocate(4) : bufstack.pop());
+		buf.putInt(0x0C0C0C0C); // META HEADER/FOOTER
 		buf.flip();
 		if (useRedoThread) {
 			try {
@@ -1022,6 +1094,9 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	private void privateSync(final boolean syncInternal) {
 		final long ts = System.currentTimeMillis();
 		boolean isDirty = false;
+		if (!dirtyLeafNodes.isEmpty() || !dirtyInternalNodes.isEmpty()) {
+			submitRedoMeta(0); // Meta Sync (full recover needed)
+		}
 		//
 		// Write Leaf Nodes
 		if (!dirtyLeafNodes.isEmpty()) {

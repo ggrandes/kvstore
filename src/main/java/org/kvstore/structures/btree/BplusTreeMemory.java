@@ -100,6 +100,11 @@ public final class BplusTreeMemory<K extends DataHolder<K>, V extends DataHolder
 	}
 
 	@Override
+	protected void submitRedoMeta(final int value) {
+		// Nothing
+	}
+
+	@Override
 	protected boolean clearStorage() {
 		storeNodes.clear();
 		return true;

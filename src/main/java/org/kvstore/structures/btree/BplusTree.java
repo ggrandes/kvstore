@@ -776,6 +776,12 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 	abstract protected void submitRedoRemove(final K key);
 
 	/**
+	 * submit metadata to redo
+	 * @param value
+	 */
+	abstract protected void submitRedoMeta(final int value);
+
+	/**
 	 * Put the value in the tree (if key already exists, update value)
 	 * @param key
 	 * @param value
