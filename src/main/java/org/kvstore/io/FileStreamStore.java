@@ -29,8 +29,10 @@ import java.nio.channels.FileChannel;
 public final class FileStreamStore {
 	private final static short MAGIC = 0x754C;
 	private final static byte MAGIC_PADDING = 0x42;
+	private final static byte MAGIC_FOOT = 0x24;
 	private static final boolean DEBUG = false;
 	private static final int HEADER_LEN = 6;
+	private static final int FOOTER_LEN = 1;
 
 	/**
 	 * File associated to this store
@@ -136,7 +138,7 @@ public final class FileStreamStore {
 			offsetOutputUncommited = offsetOutputCommited = fcOutput.position();
 		}
 		catch(Exception e) {
-			e.printStackTrace();
+			e.printStackTrace(System.out);
 			try { close(); } catch(Exception ign) {}
 		}
 		validState = isOpen();
@@ -183,7 +185,7 @@ public final class FileStreamStore {
 			return (file.length() + bufOutput.position());
 		}
 		catch(Exception e) {
-			e.printStackTrace();
+			e.printStackTrace(System.out);
 		}
 		return -1;
 	}
@@ -205,7 +207,7 @@ public final class FileStreamStore {
 			open();
 		}
 		catch(Exception e) {
-			e.printStackTrace();
+			e.printStackTrace(System.out);
 		}
 	}
 
@@ -250,10 +252,23 @@ public final class FileStreamStore {
 	}
 	
 	/**
+	 * Read desired block of datalen from end of file
+	 * @param datalen expected
+	 * @param ByteBuffer
+	 * @return new offset (offset+headerlen+datalen+footer)
+	 */
+	public synchronized long readFromEnd(final long datalen, final ByteBuffer buf) {
+		if (!validState) throw new InvalidStateException();
+		final long size = size();
+		final long offset = (size - HEADER_LEN - datalen - FOOTER_LEN);
+		return read(offset, buf);
+	}
+
+	/**
 	 * Read block from file
 	 * @param offset of block
 	 * @param ByteBuffer
-	 * @return new offset (offset+headerlen+datalen)
+	 * @return new offset (offset+headerlen+datalen+footer)
 	 */
 	public synchronized long read(long offset, final ByteBuffer buf) {
 		if (!validState) throw new InvalidStateException();
@@ -284,13 +299,18 @@ public final class FileStreamStore {
 				}
 				final int magic = ((magicB1 << 8) | magicB2);
 				if (magic != MAGIC) {
-					System.out.println("MAGIC fake=" + Integer.toHexString(magic) + " expected=" + Integer.toHexString(MAGIC));
+					System.out.println("MAGIC HEADER fake=" + Integer.toHexString(magic) + " expected=" + Integer.toHexString(MAGIC));
 					return -1;
 				}
 				break;
 			}
 			//
 			final int datalen = bufInput.getInt(); 	// Header - Data Size (int, 4 bytes)
+			final int footer = bufInput.get(datalen+HEADER_LEN); 	// Footer (byte)
+			if (footer != MAGIC_FOOT) {
+				System.out.println("MAGIC FOOT fake=" + Integer.toHexString(footer) + " expected=" + Integer.toHexString(MAGIC_FOOT));
+				return -1;
+			}
 			bufInput.limit(Math.min(readed, datalen+HEADER_LEN));
 			buf.put(bufInput);
 			if (datalen > (readed-HEADER_LEN)) {
@@ -298,10 +318,10 @@ public final class FileStreamStore {
 				readed = fcInput.read(buf);
 			}
 			buf.flip();
-			return (offset+HEADER_LEN+datalen);
+			return (offset+HEADER_LEN+datalen+FOOTER_LEN);
 		}
 		catch(Exception e) {
-			e.printStackTrace();
+			e.printStackTrace(System.out);
 		}
 		return -1;
 	}
@@ -315,7 +335,7 @@ public final class FileStreamStore {
 	 */
 	public synchronized long write(final ByteBuffer buf) {
 		if (!validState) throw new InvalidStateException();
-		final int packet_size = (HEADER_LEN + buf.limit()); // short + int + data
+		final int packet_size = (HEADER_LEN + buf.limit() + FOOTER_LEN); // short + int + data + byte
 		final boolean useDirectIO = (packet_size > (1<<bits));
 		try {
 			if (useDirectIO) {
@@ -342,7 +362,7 @@ public final class FileStreamStore {
 			bufOutput.putInt(buf.limit()); 				// Header - Data Size (int, 4 bytes)
 			if (useDirectIO) {
 				bufOutput.flip();
-				fcOutput.write(new ByteBuffer[] { bufOutput, buf }); // Write Header + Data
+				fcOutput.write(new ByteBuffer[] { bufOutput, buf, ByteBuffer.wrap(new byte[] { MAGIC_FOOT }) }); // Write Header + Data + Footer
 				bufOutput.clear();
 				offsetOutputUncommited = offsetOutputCommited = fcOutput.position();
 				if (syncOnFlush) {
@@ -353,6 +373,7 @@ public final class FileStreamStore {
 			}
 			else {
 				bufOutput.put(buf); // Data Body
+				bufOutput.put(MAGIC_FOOT); // Footer
 				// Increment offset of buffered data (header + user-data)
 				offsetOutputUncommited += packet_size;
 				if (flushOnWrite)
@@ -362,7 +383,7 @@ public final class FileStreamStore {
 			return offset;
 		}
 		catch(Exception e) {
-			e.printStackTrace();
+			e.printStackTrace(System.out);
 		}
 		return -1L;
 	}
@@ -415,7 +436,7 @@ public final class FileStreamStore {
 			return true;
 		}
 		catch(Exception e) {
-			e.printStackTrace();
+			e.printStackTrace(System.out);
 		}
 		return false;
 	}
@@ -455,7 +476,7 @@ public final class FileStreamStore {
 			return true;
 		}
 		catch(Exception e) {
-			e.printStackTrace();
+			e.printStackTrace(System.out);
 		}
 		return false;
 	}
