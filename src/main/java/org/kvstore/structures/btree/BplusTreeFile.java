@@ -495,7 +495,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 				final int value1 = buf.get();
 				final int value2 = buf.get();
 				final int foot = buf.get();
-				if ((head == 0xC) && (head == foot) && (value1 == value2)) {
+				if ((head == 0x0C) && (head == foot) && (value1 == value2)) {
 					System.out.println("Meta Sync State=" + HexStrings.nativeAsHex((byte)head));
 				}
 			}
@@ -556,13 +556,13 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 				System.out.println("Applying Redo [offset=" + offset + "]");
 			final int head = buf.get();
 			switch (head) {
-			case 0xA: // PUT
+			case 0x0A: // PUT
 				treeTmp.put(factoryK.deserialize(buf), factoryV.deserialize(buf));
 				break;
-			case 0xB: // REMOVE
+			case 0x0B: // REMOVE
 				treeTmp.remove(factoryK.deserialize(buf));
 				break;
-			case 0xC: // META
+			case 0x0C: // META
 				System.out.println("Meta type=" + HexStrings.nativeAsHex(buf.get()));
 				break;
 			default: // Unknown
@@ -758,10 +758,10 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		if (!useRedo) return;
 		createRedoThread();
 		final ByteBuffer buf = (useRedoThread ? ByteBuffer.allocate(2+key.byteLength()+value.byteLength()) : bufstack.pop());
-		buf.put((byte) 0xA); // PUT HEADER
+		buf.put((byte) 0x0A); // PUT HEADER
 		key.serialize(buf);
 		value.serialize(buf);
-		buf.put((byte) 0xA); // PUT FOOTER
+		buf.put((byte) 0x0A); // PUT FOOTER
 		buf.flip();
 		if (useRedoThread) {
 			try {
@@ -784,9 +784,9 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		if (!useRedo) return;
 		createRedoThread();
 		final ByteBuffer buf = (useRedoThread ? ByteBuffer.allocate(2+key.byteLength()) : bufstack.pop());
-		buf.put((byte) 0xB); // REMOVE HEADER
+		buf.put((byte) 0x0B); // REMOVE HEADER
 		key.serialize(buf);
-		buf.put((byte) 0xB); // REMOVE FOOTER
+		buf.put((byte) 0x0B); // REMOVE FOOTER
 		buf.flip();
 		if (useRedoThread) {
 			try {
@@ -807,7 +807,6 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	@Override
 	protected void submitRedoMeta(final int futureUse) {
 		if (!useRedo) return;
-//		if (useRedo) return; // XXX: FAKE
 		createRedoThread();
 		final ByteBuffer buf = (useRedoThread ? ByteBuffer.allocate(4) : bufstack.pop());
 		buf.putInt(0x0C0C0C0C); // META HEADER/FOOTER
