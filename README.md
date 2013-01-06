@@ -1,6 +1,6 @@
 # KVStore
 
-KVStore is a Key-Value Store for Memory & Disk (for disk, keys and values must be fixed length) for Java. Project are Open source (Apache License, Version 2.0) 
+KVStore is a Key-Value Store for Memory & Disk (for disk, keys and values must be fixed length) for Java. Project is Open source (Apache License, Version 2.0) 
 
 API is similar to [TreeMap](http://docs.oracle.com/javase/6/docs/api/java/util/TreeMap.html).
 
@@ -60,6 +60,8 @@ public class Example {
 
 }
 ```
+
+* More examples in [Test package](https://github.com/ggrandes/kvstore/tree/master/src/main/java/org/kvstore/test)
 
 ##### The Result:
 
