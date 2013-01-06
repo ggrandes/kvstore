@@ -133,7 +133,7 @@ public class Example {
   </tr>
 </table>
 
-###### Test-1 (org.kvstore.test.BenchMarkDiskStore): Registry { count=1e6, datalen=256bytes } BlockStore { blockSize=512 (2reg/block), fileSize=250MB } StreamStore { outBufferSize=0x10000, fileSize=256MB } 
+###### Test-1 (org.kvstore.test.BenchMarkDiskStore): Registry { count=1e6, datalen=256bytes } BlockStore { blockSize=512 (2reg/block), fileSize=250MB } StreamStore { outBufferSize=0x10000, align=true, fileSize=256MB } 
 
 <table>
   <tr>
