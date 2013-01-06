@@ -143,7 +143,7 @@ public class Example {
     <th>Remove/s</th>
   </tr>
   <tr>
-    <th>BplusTree</th>
+    <th>BplusTreeMemory</th>
     <td>457k</td>
     <td>1041k</td>
     <td>324k</td>
