@@ -86,22 +86,22 @@ public class Example {
 * Block Store (Fixed length chunks)
 * Stream Store (Variable length chunks)
 * B+Tree for Index
-  * Buffer reuse
-  * Memory mode
-  * Persistence on disk (BlockStore)
-    * Cache of nodes
-    * Reuse free blocks on disk
-    * Redo log
-    * Recovery system
+    * Buffer reuse
+    * Memory mode
+    * Persistence on disk (BlockStore)
+        * Cache of nodes
+        * Reuse free blocks on disk
+        * Redo log
+        * Recovery system
 * HashMaps for natives (memory) 
 * Holders for data and NIO serialization
-  * Fixed length
-    * Booleans
-    * Integers
-    * Longs
-    * Nulls
-  * Variable length
-    * Strings
+    * Fixed length
+        * Booleans
+        * Integers
+        * Longs
+        * Nulls
+    * Variable length
+        * Strings
 
 ## MISC
 
