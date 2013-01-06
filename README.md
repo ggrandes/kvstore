@@ -61,8 +61,6 @@ public class Example {
 }
 ```
 
-* More examples in [Test package](https://github.com/ggrandes/kvstore/tree/master/src/main/java/org/kvstore/test)
-
 ##### The Result:
 
 	tree.get(7)=1
@@ -72,6 +70,9 @@ public class Example {
 	Key=111 Value=3
 	tree.firstKey()=-11
 	tree.lastKey()=111
+
+
+* More examples in [Test package](https://github.com/ggrandes/kvstore/tree/master/src/main/java/org/kvstore/test)
 
 ---
 
