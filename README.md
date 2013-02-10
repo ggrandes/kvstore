@@ -20,18 +20,16 @@ import org.kvstore.structures.btree.BplusTreeFile;
 
 public class Example {
 	private static final String btreeFile = "/tmp/test";
+
 	//
 	public static void main(final String[] args) throws Exception {
-		final int[] keys = new int[] {
-				5, 7, -11, 111, 0
-		};
+		final int[] keys = new int[] { 5, 7, -11, 111, 0 };
 		//
-		BplusTreeFile<IntHolder, IntHolder> tree;
-		tree = new BplusTreeFile<IntHolder, IntHolder>(
-			true, 512, 
-			IntHolder.class, IntHolder.class, 
-			btreeFile
-		);
+		KVStoreFactory<IntHolder, IntHolder> factory = new KVStoreFactory<IntHolder, IntHolder>(
+				IntHolder.class, IntHolder.class);
+		Options opts = factory.createTreeOptionsDefault()
+				.set(KVStoreFactory.FILENAME, btreeFile);
+		BplusTreeFile<IntHolder, IntHolder> tree = factory.createTreeFile(opts);
 		//
 		tree.clear();
 		// ============== PUT
@@ -46,7 +44,8 @@ public class Example {
 		// ============== REMOVE
 		tree.remove(IntHolder.valueOf(7));
 		// ============== ITERATOR
-		for (Iterator<TreeEntry<IntHolder, IntHolder>> i = tree.iterator(); i.hasNext();) {
+		for (Iterator<TreeEntry<IntHolder, IntHolder>> i = tree.iterator(); i
+				.hasNext();) {
 			TreeEntry<IntHolder, IntHolder> e = i.next();
 			System.out.println("Key=" + e.getKey() + " Value=" + e.getValue());
 		}
@@ -57,7 +56,6 @@ public class Example {
 		tree.sync();
 		tree.close();
 	}
-
 }
 ```
 
@@ -79,8 +77,6 @@ public class Example {
 ## TODOs
 
 * Use Log4J
-* Create Factory
-* Options object for factory
 * A lot of Doc
 * Describe disk formats
 * HashMap on disk
@@ -106,6 +102,9 @@ public class Example {
         * Nulls
     * Variable length
         * Strings
+* Create Factory
+* Options object for factory
+
 
 ## MISC
 
