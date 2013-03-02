@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+import org.apache.log4j.Logger;
 import org.kvstore.utils.GenericFactory;
 import org.kvstore.utils.PrimeFinder;
 
@@ -29,6 +30,7 @@ import org.kvstore.utils.PrimeFinder;
  * @author Guillermo Grandes / guillermo.grandes[at]gmail.com
  */
 public class IntLinkedHashMap<V> implements Iterable<V> {
+	private static final Logger log = Logger.getLogger(IntLinkedHashMap.class);
 
 	private int elementCount;
 	private IntLinkedEntry<V>[] elementData;
@@ -137,7 +139,7 @@ public class IntLinkedHashMap<V> implements Iterable<V> {
 		while (m != null) {
 			if (key == m.key) {
 				if (accessOrder) {
-					//System.out.println("reliking " + this.key);
+					//if (log.isDebugEnabled()) log.debug("reliking " + this.key);
 					m.remove();
 					m.addBefore(header);
 				}
@@ -214,7 +216,7 @@ public class IntLinkedHashMap<V> implements Iterable<V> {
 
 	void rehash(final int capacity) {
 		final int length = primeSize(capacity == 0 ? 1 : capacity << 1);
-		//System.out.println(this.getClass().getName() + "::rehash() old=" + elementData.length + " new=" + length);
+		if (log.isDebugEnabled()) log.debug(this.getClass().getName() + "::rehash() old=" + elementData.length + " new=" + length);
 
 		IntLinkedEntry<V>[] newData = newElementArray(length);
 		for (int i = 0; i < elementData.length; i++) {
@@ -324,7 +326,7 @@ public class IntLinkedHashMap<V> implements Iterable<V> {
 	private IntLinkedEntry<V> reuseAfterDelete() {
 		final IntLinkedEntry<V> reuse = cache.pollLast();
 		/*if (reuse != null) {
-			System.out.println("reusing IntLinkedEntry<V>=" + reuse.hashCode() + " cacheSize=" + cache.size());
+			if (log.isDebugEnabled()) log.debug("reusing IntLinkedEntry<V>=" + reuse.hashCode() + " cacheSize=" + cache.size());
 		}*/
 		return reuse;
 	}

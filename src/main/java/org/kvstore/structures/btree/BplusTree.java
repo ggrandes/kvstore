@@ -16,6 +16,7 @@ package org.kvstore.structures.btree;
 
 import java.util.Iterator;
 
+import org.apache.log4j.Logger;
 import org.kvstore.holders.DataHolder;
 import org.kvstore.structures.stack.IntStack;
 import org.kvstore.structures.stack.ObjectStack;
@@ -41,9 +42,7 @@ import org.kvstore.utils.GenericFactory;
  * @references <a href="https://github.com/jankotek/JDBM3">JDBM3</a> / <a href="http://opendatastructures.org/">ODS</a>
  */
 public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>> implements Iterable<BplusTree.TreeEntry<K,V>> {
-	public static final boolean DEBUG = false;
-	public static final boolean DEBUG2 = false;
-
+	private static final Logger log = Logger.getLogger(BplusTree.class);
 	/**
 	 * Minimal B-Order allowed for leaf/internal nodes
 	 */
@@ -137,11 +136,11 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 		//
 		leafNodeFactory = createLeafNode();
 		internalNodeFactory = createInternalNode();
-		if (DEBUG || true) {
-			System.out.println(this.getClass().getName() + "::BplusTree() LeafNode b=" + b_order_leaf + " size=" + (isMemory ? -1 : leafNodeFactory.getStructMaxSize()));
-			System.out.println(this.getClass().getName() + "::BplusTree() InternalNode b=" + b_order_internal+ " size=" + (isMemory ? -1 : internalNodeFactory.getStructMaxSize()));
+		if (log.isDebugEnabled()) {
+			log.debug(this.getClass().getName() + "::BplusTree() LeafNode b=" + b_order_leaf + " size=" + (isMemory ? -1 : leafNodeFactory.getStructMaxSize()));
+			log.debug(this.getClass().getName() + "::BplusTree() InternalNode b=" + b_order_internal+ " size=" + (isMemory ? -1 : internalNodeFactory.getStructMaxSize()));
 			if (!isMemory)
-				System.out.println(this.getClass().getName() + "::BplusTree() FileStorageBlock blocksize=" + blockSize);
+				log.debug(this.getClass().getName() + "::BplusTree() FileStorageBlock blocksize=" + blockSize);
 		}
 		validState = false;
 	}
@@ -294,8 +293,8 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 			mid += (1 - (mid % 2));
 			int nodeSize = node.getStructEstimateSize(mid);
 
-			//if (DEBUG) 
-			//System.out.println(this.getClass().getName() + "::findOptimalNodeOrder(" + node.getClass().getName() + ") blockSize=" + blockSize + " nodeSize=" + nodeSize + " b_low=" + low + " b_order=" + mid + " b_high=" + high);
+			if (log.isDebugEnabled())
+				log.debug(this.getClass().getName() + "::findOptimalNodeOrder(" + node.getClass().getName() + ") blockSize=" + blockSize + " nodeSize=" + nodeSize + " b_low=" + low + " b_order=" + mid + " b_high=" + high);
 
 			if (nodeSize < blockSize) {
 				low = mid + 2;
@@ -380,7 +379,7 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 			}
 			node = getNode(nodeInternal.childs[slot]);
 			if (node == null) {
-				System.out.println("ERROR childs["+slot+"] in node=" + nodeInternal);
+				log.error("ERROR childs["+slot+"] in node=" + nodeInternal);
 				return null;
 			}
 		}
@@ -671,7 +670,8 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 		if (!validState) throw new InvalidStateException();
 		if (key == null) return false;
 		try {
-			if (DEBUG2) System.out.println("trying remove key=" + key);
+			if (log.isDebugEnabled())
+				log.debug("trying remove key=" + key);
 			submitRedoRemove(key);
 			if (removeIterative(key)) { // removeRecursive(key, rootIdx)
 				elements--;
@@ -681,18 +681,18 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 					rootIdx = ((InternalNode<K, V>)nodeRoot).childs[0];
 					// Clean old nodeRoot
 					freeNode(nodeRoot);
-					if (DEBUG) 
-						System.out.println("DECREASES TREE HEIGHT (ROOT): elements=" + elements + " oldRoot=" + nodeRoot.id + " newRoot=" + rootIdx);
+					if (log.isDebugEnabled())
+						log.debug("DECREASES TREE HEIGHT (ROOT): elements=" + elements + " oldRoot=" + nodeRoot.id + " newRoot=" + rootIdx);
 					height--; // tree height
 				}
 				else if (nodeRoot.isEmpty() && nodeRoot.isLeaf() && (elements == 0) && (getHighestNodeId() > 4096)) {
 					// Hace un reset del arbol para liberar espacio de modo rapido
-					if (DEBUG) 
-						System.out.println("RESET TREE: elements=" + elements + " leaf=" + nodeRoot.isLeaf() + " empty=" + nodeRoot.isEmpty() + " id=" + nodeRoot.id + " lastNodeId=" + getHighestNodeId() + " nodeRoot=" + nodeRoot);
+					if (log.isDebugEnabled())
+						log.debug("RESET TREE: elements=" + elements + " leaf=" + nodeRoot.isLeaf() + " empty=" + nodeRoot.isEmpty() + " id=" + nodeRoot.id + " lastNodeId=" + getHighestNodeId() + " nodeRoot=" + nodeRoot);
 					clear();
 				}
 				else if ((elements == 0) && (!nodeRoot.isLeaf() || !nodeRoot.isEmpty())) {
-					System.out.println("ERROR in TREE: elements=" + elements + " rootLeaf=" + nodeRoot.isLeaf() + " rootEmpty=" + nodeRoot.isEmpty() + " rootId=" + nodeRoot.id + " nodeRoot=" + nodeRoot);
+					log.error("ERROR in TREE: elements=" + elements + " rootLeaf=" + nodeRoot.isLeaf() + " rootEmpty=" + nodeRoot.isEmpty() + " rootId=" + nodeRoot.id + " nodeRoot=" + nodeRoot);
 				}
 				return true;
 			}
@@ -714,11 +714,13 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 	protected boolean removeRecursive(final K key, final int nodeid) {
 		if (nodeid == Node.NULL_ID) return false;  // NOT FOUND
 		Node<K, V> nodeDelete = getNode(nodeid);
-		if (DEBUG2) System.out.println("trying removeRecursive nodeDelete=" + nodeDelete + " key=" + key);
+		if (log.isDebugEnabled())
+			log.debug("trying removeRecursive nodeDelete=" + nodeDelete + " key=" + key);
 		int slot = nodeDelete.findSlotByKey(key);
 		if (nodeDelete.isLeaf()) {
 			if (slot < 0) {
-				if (DEBUG2) System.out.println("NOT FOUND nodeDelete=" + nodeDelete + " key=" + key);
+				if (log.isDebugEnabled())
+					log.debug("NOT FOUND nodeDelete=" + nodeDelete + " key=" + key);
 				return false; // NOT FOUND
 			}
 			nodeDelete.remove(slot);
@@ -803,8 +805,8 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 			if (splitedNode != null) {   // root was split, make new root
 				InternalNode<K, V> nodeRootNew = createInternalNode();
 				nodeRootNew.allocId();
-				if (DEBUG) 
-					System.out.println("INCREASES TREE HEIGHT (ROOT): elements=" + elements + " oldRoot=" + rootIdx + " newRoot=" + nodeRootNew.id);
+				if (log.isDebugEnabled())
+					log.debug("INCREASES TREE HEIGHT (ROOT): elements=" + elements + " oldRoot=" + rootIdx + " newRoot=" + nodeRootNew.id);
 				final K newkey = splitedNode.splitShiftKeysLeft();
 				putNode(splitedNode);
 				nodeRootNew.childs[0] = rootIdx;
@@ -839,7 +841,8 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 	protected Node<K, V> putRecursive(K key, final V value, final int nodeid) throws DuplicateKeyException {
 		final Node<K, V> nodeFind = getNode(nodeid);
 		if (nodeFind == null) {
-			if (DEBUG) System.out.println(this.getClass().getName() + "::putRecursive getNode("+nodeid+")=null");
+			if (log.isDebugEnabled())
+				log.debug(this.getClass().getName() + "::putRecursive getNode("+nodeid+")=null");
 		}
 		int slot = nodeFind.findSlotByKey(key);
 		if (slot >= 0) {
@@ -1011,7 +1014,8 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 		final Node<K, V> node = getNode(nodeid);
 		int elements_debug_local_recounter = 0;
 		if (node == null) {
-			if (DEBUG) System.out.println(this.getClass().getName() + "::toString() getNode("+nodeid+")=null");
+			if (log.isDebugEnabled())
+				log.debug(this.getClass().getName() + "::toString() getNode("+nodeid+")=null");
 			return 0;
 		}
 		int i = 0;

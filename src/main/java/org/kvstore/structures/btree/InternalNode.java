@@ -17,6 +17,7 @@ package org.kvstore.structures.btree;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import org.apache.log4j.Logger;
 import org.kvstore.holders.DataHolder;
 
 /**
@@ -29,6 +30,7 @@ import org.kvstore.holders.DataHolder;
  * @author Guillermo Grandes / guillermo.grandes[at]gmail.com
  */
 public final class InternalNode<K extends DataHolder<K>, V extends DataHolder<V>> extends Node<K, V> {
+	private static final Logger log = Logger.getLogger(InternalNode.class);
 	public final int[] childs;
 
 	protected InternalNode(final BplusTree<K, V> tree) {
@@ -64,13 +66,13 @@ public final class InternalNode<K extends DataHolder<K>, V extends DataHolder<V>
 
 	public boolean add(final K newKey, final int childId) {
 		if (isFull()) { // node is full
-			if (DEBUG) System.out.println("overflow");
+			if (log.isDebugEnabled()) log.debug("overflow");
 			return false;
 		}
 		// TODO: Reparar
 		int slot = findSlotByKey(newKey); 
 		if (slot >= 0) {
-			if (DEBUG) System.out.println("key already exists: " + newKey);
+			if (log.isDebugEnabled()) log.debug("key already exists: " + newKey);
 			return false; // key already exist
 		}
 		slot = (-slot)-1;
@@ -78,7 +80,7 @@ public final class InternalNode<K extends DataHolder<K>, V extends DataHolder<V>
 	}
 
 	public boolean add(final int slot, final K newKey, final int childId) {
-		//if (DEBUG) System.out.println("add("+newKey+") i=" + slot);
+		if (log.isDebugEnabled()) log.debug("add("+newKey+") i=" + slot);
 		if (slot < allocated) { 
 			moveElementsRight(keys, slot);
 			moveChildsRight(slot+1);
@@ -92,7 +94,7 @@ public final class InternalNode<K extends DataHolder<K>, V extends DataHolder<V>
 	@Override
 	public boolean remove(final int slot) {
 		if (slot < 0) {
-			System.out.println("faking slot=" + slot + " allocated=" + allocated);
+			log.error("faking slot=" + slot + " allocated=" + allocated);
 			return false;
 		}
 		if (slot < allocated) { 
@@ -100,7 +102,7 @@ public final class InternalNode<K extends DataHolder<K>, V extends DataHolder<V>
 			moveChildsLeft(slot+1);
 		}
 		if (allocated > 0) allocated--;
-		if (DEBUG) System.out.println("[" + id + "] erased up ["+allocated+"] key=" + keys[allocated] + " value="+ childs[allocated+1]);
+		if (log.isDebugEnabled()) log.debug("[" + id + "] erased up ["+allocated+"] key=" + keys[allocated] + " value="+ childs[allocated+1]);
 		keys[allocated] = null;
 		childs[allocated+1] = NULL_ID;
 		return true;
@@ -113,7 +115,7 @@ public final class InternalNode<K extends DataHolder<K>, V extends DataHolder<V>
 		//int j = ((allocated >> 1) | (allocated & 1)); // dividir por dos y sumar el resto (0 o 1)
 		int j = (allocated >> 1); // dividir por dos (libro)
 		final int newsize = allocated-j;
-		//if (DEBUG) System.out.println("split j=" + j);
+		//if (log.isDebugEnabled()) log.debug("split j=" + j);
 		System.arraycopy(keys, j, newHigh.keys, 0, newsize);
 		System.arraycopy(childs, j+1, newHigh.childs, 0, newsize);
 		// TODO: Limpiar la parte alta de los arrays de referencias inutiles
@@ -141,12 +143,12 @@ public final class InternalNode<K extends DataHolder<K>, V extends DataHolder<V>
 
 	// insert child
 	protected void moveChildsRight(final int srcPos) {
-		//if (DEBUG) System.out.println("moveKeysRight("+srcPos+") allocated=" + allocated + ":" + keys.length + ":" + (allocated-srcPos) + ":" + (keys.length-srcPos-1));
+		//if (log.isDebugEnabled()) log.debug("moveKeysRight("+srcPos+") allocated=" + allocated + ":" + keys.length + ":" + (allocated-srcPos) + ":" + (keys.length-srcPos-1));
 		System.arraycopy(childs, srcPos, childs, srcPos+1, allocated-srcPos+1);
 	}
 	// remove child
 	protected void moveChildsLeft(final int srcPos) {
-		//if (DEBUG) System.out.println("moveKeysLeft("+srcPos+") allocated=" + allocated + ":" + keys.length + ":" + (allocated-srcPos-1) + ":" + (keys.length-srcPos-1));
+		//if (log.isDebugEnabled()) log.debug("moveKeysLeft("+srcPos+") allocated=" + allocated + ":" + keys.length + ":" + (allocated-srcPos-1) + ":" + (keys.length-srcPos-1));
 		System.arraycopy(childs, srcPos+1, childs, srcPos, allocated-srcPos);
 	}
 

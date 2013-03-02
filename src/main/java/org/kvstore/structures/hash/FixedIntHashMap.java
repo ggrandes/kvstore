@@ -16,6 +16,7 @@ package org.kvstore.structures.hash;
 import java.util.Arrays;
 import java.util.Random;
 
+import org.apache.log4j.Logger;
 import org.kvstore.utils.GenericFactory;
 import org.kvstore.utils.PrimeFinder;
 
@@ -29,8 +30,7 @@ import org.kvstore.utils.PrimeFinder;
  * @author Guillermo Grandes / guillermo.grandes[at]gmail.com
  */
 public class FixedIntHashMap<T> {
-	public static final boolean DEBUG = false;
-
+	private static final Logger log = Logger.getLogger(FixedIntHashMap.class);
 	private int elementCount;
 
 	private int[] elementKeys;
@@ -45,13 +45,13 @@ public class FixedIntHashMap<T> {
 	private int collisions = 0;
 
 	private int[] newKeyArray(final int size) {
-		if (DEBUG) System.out.println(this.getClass().getName() + "::newKeyArray("+size+")");
+		if (log.isDebugEnabled()) log.debug(this.getClass().getName() + "::newKeyArray("+size+")");
 		final int[] e = new int[size];
 		Arrays.fill(e, Integer.MIN_VALUE);
 		return e;
 	}
 	private T[] newElementArray(final int size) {
-		if (DEBUG) System.out.println(this.getClass().getName() + "::newElementArray("+size+")");
+		if (log.isDebugEnabled()) log.debug(this.getClass().getName() + "::newElementArray("+size+")");
 		final T[] e = arrayFactory.newArray(size);
 		Arrays.fill(e, null);
 		return e;
@@ -117,7 +117,7 @@ public class FixedIntHashMap<T> {
 	 */
 	private void computeMaxSize() {
 		threshold = (int) (elementKeys.length * loadFactor);
-		if (DEBUG) System.out.println(this.getClass().getName() + "::computeMaxSize()="+threshold + " collisions=" + collisions + " (" + (collisions * 100 / elementKeys.length) + ")");
+		if (log.isDebugEnabled()) log.debug(this.getClass().getName() + "::computeMaxSize()="+threshold + " collisions=" + collisions + " (" + (collisions * 100 / elementKeys.length) + ")");
 		collisions = 0;
 	}
 

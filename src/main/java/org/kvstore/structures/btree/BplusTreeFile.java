@@ -28,6 +28,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.log4j.Logger;
 import org.kvstore.holders.DataHolder;
 import org.kvstore.io.FileBlockStore;
 import org.kvstore.io.FileBlockStore.CallbackSync;
@@ -45,6 +46,8 @@ import org.kvstore.utils.HexStrings;
  * @author Guillermo Grandes / guillermo.grandes[at]gmail.com
  */
 public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V>> extends BplusTree<K, V> {
+	private static final Logger log = Logger.getLogger(BplusTreeFile.class);
+
 	/**
 	 * Disable all Caches
 	 */
@@ -226,7 +229,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	protected void freeNode(final Node<K, V> node) {
 		final int nodeid = node.id;
 		if (nodeid == Node.NULL_ID) {
-			System.out.println(this.getClass().getName() + "::freeNode(" + nodeid + ") ERROR");
+			log.error(this.getClass().getName() + "::freeNode(" + nodeid + ") ERROR");
 			return;
 		}
 		// Se marca como borrado
@@ -236,9 +239,9 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 
 	@Override
 	protected Node<K, V> getNode(final int nodeid) {
-		//System.out.println("getNode(" +nodeid+ ")");
+		//log.debug("getNode(" +nodeid+ ")");
 		if (nodeid == Node.NULL_ID) {
-			System.out.println(this.getClass().getName() + "::getNode(" + nodeid + ") ERROR");
+			log.error(this.getClass().getName() + "::getNode(" + nodeid + ") ERROR");
 			return null;
 		}
 		if (disableAllCaches) {
@@ -258,7 +261,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		final ByteBuffer buf = storage.get(index);
 		final Node<K, V> node = Node.deserialize(buf, this);
 		if (rootIdx == node.id) {
-			System.out.println(this.getClass().getName() + "::getNodeFromStore(" + nodeid + ") WARN ROOT NODE READED");
+			log.warn(this.getClass().getName() + "::getNodeFromStore(" + nodeid + ") WARN ROOT NODE READED");
 		}
 		bufstack.push(buf);
 		if (enableIOStats) getIOStat(nodeid).incPhysRead();
@@ -345,7 +348,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			if (enableDirtyCheck) {
 				sb.append(" dirtyBlocks=").append(dirtyCheck.toString());
 			}
-			System.out.println(sb.toString());
+			log.info(sb.toString());
 		}
 	}
 
@@ -403,9 +406,10 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			}
 		}
 		catch(IOException e) {
-			e.printStackTrace(System.out);
+			log.error("IOException in writeMetaData("+isClean+")", e);
 		}
-		if (DEBUG) System.out.println(this.getClass().getName() + "::writeMetaData() elements=" + elements + " rootIdx=" + rootIdx + " lastNodeId=" + storageBlock + " freeBlocks=" + freeBlocks.cardinality());
+		if (log.isDebugEnabled())
+			log.debug(this.getClass().getName() + "::writeMetaData() elements=" + elements + " rootIdx=" + rootIdx + " lastNodeId=" + storageBlock + " freeBlocks=" + freeBlocks.cardinality());
 		return isOK;
 	}
 
@@ -437,7 +441,8 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		isClean = ((buf.get() == ((byte)0xEA)) ? true : false);
 		magic2 = buf.getInt();
 		if (magic2 != MAGIC_2) throw new InvalidDataException("Invalid metadata (MAGIC2)");
-		if (DEBUG) System.out.println(this.getClass().getName() + "::readMetaData() elements=" + elements + " rootIdx=" + rootIdx);
+		if (log.isDebugEnabled())
+			log.debug(this.getClass().getName() + "::readMetaData() elements=" + elements + " rootIdx=" + rootIdx);
 		bufstack.push(buf);
 		// Clear Caches
 		clearReadCaches();
@@ -448,7 +453,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 				freeBlocks = newFreeBlocks;
 			}
 			catch(IOException e) {
-				e.printStackTrace(System.out);
+				log.error("IOException in readMetaData()", e);
 			}
 		}
 		return isClean;
@@ -496,24 +501,24 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 				final int value2 = buf.get();
 				final int foot = buf.get();
 				if ((head == 0x0C) && (head == foot) && (value1 == value2)) {
-					System.out.println("Meta Sync State=" + HexStrings.nativeAsHex((byte)head));
+					log.info("Meta Sync State=" + HexStrings.nativeAsHex((byte)head));
 				}
 			}
 		}
-		System.out.println(recoveryIncremental ? "Incremental Recovery Allowed" : "Full Recovery Needed");
+		log.info(recoveryIncremental ? "Incremental Recovery Allowed" : "Full Recovery Needed");
 		//
 		final boolean oldUseRedo = useRedo;
 		final K factoryK = factoryK();
 		final V factoryV = factoryV();
 		BplusTreeFile<K, V> treeTmp = null; 
 		if (recoveryIncremental) {
-			System.out.println("Recovery in Incremental Mode (Replay Redo)");
+			log.info("Recovery in Incremental Mode (Replay Redo)");
 			//
 			treeTmp = this;
 			useRedo = false; 	// HACK (don't call setUseRedo, destructive)
 			validState = true; 	// HACK
 		} else {
-			System.out.println("Recovery in Full Mode (Scan datafiles)");
+			log.info("Recovery in Full Mode (Scan datafiles)");
 			//
 			final int blocks = storage.sizeInBlocks();
 			treeTmp = new BplusTreeFile<K, V>(autoTune, b_size, getGenericFactoryK().type, getGenericFactoryV().type, fileName + ".recover");
@@ -522,11 +527,11 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			treeTmp.setUseRedo(false);
 			//
 			// Reconstruct Tree, Scan BlockStore for data
-			System.out.println("Blocks to Scan: " + blocks);
+			log.info("Blocks to Scan: " + blocks);
 			for (int index = 1; index < blocks; index++) {
 				try {
 					if ((index % 100) == 0)
-						System.out.println("Recovering block [" + index + "/" + blocks + "]");
+						log.info("Recovering block [" + index + "/" + blocks + "]");
 					final Node<K, V> node = getNodeFromStore(index); // read
 					if (node.isLeaf()) {
 						final LeafNode<K, V> leafNode = (LeafNode<K, V>) node;
@@ -553,7 +558,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 				break;
 			}
 			if ((count++ % 100) == 0)
-				System.out.println("Applying Redo [offset=" + offset + "]");
+				log.info("Applying Redo [offset=" + offset + "]");
 			final int head = buf.get();
 			switch (head) {
 			case 0x0A: // PUT
@@ -563,10 +568,10 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 				treeTmp.remove(factoryK.deserialize(buf));
 				break;
 			case 0x0C: // META
-				System.out.println("Meta type=" + HexStrings.nativeAsHex(buf.get()));
+				log.info("Meta type=" + HexStrings.nativeAsHex(buf.get()));
 				break;
 			default: // Unknown
-				System.out.println("Redo Operation=" + HexStrings.nativeAsHex((byte)head) + " Unknown");
+				log.info("Redo Operation=" + HexStrings.nativeAsHex((byte)head) + " Unknown");
 				break;
 			}
 		}
@@ -576,7 +581,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		//
 		if (recoveryIncremental) {
 			useRedo = oldUseRedo; 	// HACK (don't call setUseRedo, destructive)
-			System.out.println("Incremental Recovery completed time=" + (System.currentTimeMillis() - tsbegin) + "ms");
+			log.info("Incremental Recovery completed time=" + (System.currentTimeMillis() - tsbegin) + "ms");
 			return true;
 		}
 		// Rename data files
@@ -591,10 +596,10 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			treeTmp.fileFreeBlocks.delete();
 			// Remove broken free blocks
 			fileFreeBlocks.delete();
-			System.out.println("Full Recovery completed time=" + (System.currentTimeMillis() - tsbegin) + "ms");
+			log.info("Full Recovery completed time=" + (System.currentTimeMillis() - tsbegin) + "ms");
 			return true;
 		}
-		System.out.println("Full Recovery failed time=" + (System.currentTimeMillis() - tsbegin) + "ms");
+		log.info("Full Recovery failed time=" + (System.currentTimeMillis() - tsbegin) + "ms");
 		return false;
 	}
 
@@ -618,7 +623,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			}
 			try {
 				boolean isClean = readMetaData();
-				//System.out.println(this.hashCode() + "::open() clean=" + isClean);
+				//log.debug(this.hashCode() + "::open() clean=" + isClean);
 				if (isClean && !isNew) {
 					if (writeMetaData(false)) {
 						populateCache();
@@ -662,14 +667,14 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			}
 			sync();
 			writeMetaData(true);
-			if (enableDirtyCheck) System.out.println("dirtyCheck=" + dirtyCheck);
+			if (enableDirtyCheck) log.info("dirtyCheck=" + dirtyCheck);
 		}
 		storage.close();
 		redoStore.close();
 		clearReadCaches();
 		clearWriteCaches();
 		validState = false;
-		//System.out.println(this.hashCode() + "::close() done");
+		//log.debug(this.hashCode() + "::close() done");
 	}
 
 	/**
@@ -716,7 +721,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 						Thread.currentThread().interrupt(); // Preserve
 					}
 					catch (Exception e) {
-						e.printStackTrace(System.out);
+						log.error("Exception in createRedoThread()", e);
 					}
 					finally {
 						redoThread = null;
@@ -744,7 +749,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			localRedoThread.interrupt();
 			localRedoThread.join(30000);
 		} catch (Exception e) {
-			e.printStackTrace(System.out);
+			log.error("Exception in stopRedoThread("+localRedoThread+")", e);
 		}
 	}
 
@@ -767,7 +772,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			try {
 				redoQueue.put(buf);
 			} catch (InterruptedException e) {
-				e.printStackTrace(System.out);
+				log.error("InterruptedException in submitRedoPut(key, value)", e);
 			}
 		} else {
 			redoStore.write(buf);
@@ -792,7 +797,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			try {
 				redoQueue.put(buf);
 			} catch (InterruptedException e) {
-				e.printStackTrace(System.out);
+				log.error("InterruptedException in submitRedoRemove(key)", e);
 			}
 		} else {
 			redoStore.write(buf);
@@ -815,7 +820,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			try {
 				redoQueue.put(buf);
 			} catch (InterruptedException e) {
-				e.printStackTrace(System.out);
+				log.error("InterruptedException in submitRedoMeta("+futureUse+")", e);
 			}
 		} else {
 			redoStore.write(buf);
@@ -919,7 +924,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	 */	
 	public synchronized void setMaxCacheSizeInBytes(final int newsize) {
 		if (validState) {
-			System.out.println(this.getClass().getName() + "::setMaxCacheSizeInBytes newsize=" + newsize + " flushing write-cache");
+			log.info(this.getClass().getName() + "::setMaxCacheSizeInBytes newsize=" + newsize + " flushing write-cache");
 			privateSync(true);
 			clearReadCaches();
 		}
@@ -949,8 +954,8 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	 */
 	private void createReadCaches() {
 		recalculateSizeReadCaches();
-		//if (DEBUG) 
-		System.out.println(this.getClass().getName() + "::createReadCaches readCacheInternal=" + readCacheInternal + " readCacheLeaf=" + readCacheLeaf);
+		if (log.isDebugEnabled())
+			log.debug(this.getClass().getName() + "::createReadCaches readCacheInternal=" + readCacheInternal + " readCacheLeaf=" + readCacheLeaf);
 		cacheInternalNodes = createCacheLRUlinked(readCacheInternal);
 		cacheLeafNodes = createCacheLRUlinked(readCacheLeaf);
 	}
@@ -991,7 +996,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 				freeBlocks.set(index); // mark index as free
 			}
 		}
-		System.out.println("Populated read cache ts=" + (System.currentTimeMillis() - ts) + " blocks=" + storageBlock + " elements=" + elements);
+		log.info("Populated read cache ts=" + (System.currentTimeMillis() - ts) + " blocks=" + storageBlock + " elements=" + elements);
 	}
 
 	/**
@@ -1007,7 +1012,8 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		if (node == null) {
 			node = (isLeaf ? cacheLeafNodes : cacheInternalNodes).get(nodeid);
 			if (node == null) {
-				if (DEBUG2) System.out.println("diskread node id=" + nodeid);
+				if (log.isDebugEnabled())
+					log.debug("diskread node id=" + nodeid);
 				node = getNodeFromStore(nodeid);
 				responseFromCache = false;
 				(node.isLeaf() ? cacheLeafNodes : cacheInternalNodes).put(nodeid, node);
@@ -1104,7 +1110,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			Arrays.sort(dirtyBlocks, dirtyComparatorByID);
 			for (Node<K, V> node : dirtyBlocks) {
 				if (node == null) break;
-				//if (DEBUG) System.out.println("node.id=" + node.id);
+				//if (log.isDebugEnabled()) log.debug("node.id=" + node.id);
 				dirtyLeafNodes.remove(node.id);
 				putNodeToStore(node);
 				if (!node.isDeleted()) { 
@@ -1120,7 +1126,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			Arrays.sort(dirtyBlocks, dirtyComparatorByID);
 			for (Node<K, V> node : dirtyBlocks) {
 				if (node == null) break;
-				//if (DEBUG) System.out.println("node.id=" + node.id);
+				//if (log.isDebugEnabled()) log.debug("node.id=" + node.id);
 				dirtyInternalNodes.remove(node.id);
 				putNodeToStore(node);
 				if (!node.isDeleted()) { 
@@ -1136,7 +1142,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			redoQueue.clear();
 			redoStore.clear();
 		}
-		if (DEBUG) {
+		if (log.isDebugEnabled()) {
 			StringBuilder sb = new StringBuilder();
 			sb
 			.append(this.getClass().getName()).append("::sync()")
@@ -1156,7 +1162,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			.append(" free=").append(freeBlocks.cardinality())
 			.append(" }")
 			.append(" time=").append(System.currentTimeMillis() - ts);
-			System.out.println(sb.toString());
+			log.debug(sb.toString());
 		}
 		//clearWriteCaches();
 	}

@@ -14,12 +14,15 @@
  */
 package org.kvstore;
 
+import org.apache.log4j.Logger;
 import org.kvstore.holders.DataHolder;
 import org.kvstore.structures.btree.BplusTree;
 import org.kvstore.structures.btree.BplusTreeFile;
 import org.kvstore.structures.btree.BplusTreeMemory;
 
 public class KVStoreFactory<K extends DataHolder<K>, V extends DataHolder<V>> {
+	private static final Logger log = Logger.getLogger(KVStoreFactory.class);
+	//
 	public static final String FILENAME = "opt.kvstore.persistence.string.filename"; // String
 	public static final String CACHE_SIZE = "opt.kvstore.persistence.int.cachesize"; // int
 	public static final String AUTO_TUNE = "opt.kvstore.persistence.boolean.autotune"; // Boolean
@@ -50,7 +53,7 @@ public class KVStoreFactory<K extends DataHolder<K>, V extends DataHolder<V>> {
 	public BplusTreeFile<K, V> createTreeFile(final Options opts) throws InstantiationException, IllegalAccessException {
 		final String fileName = opts.getString(FILENAME);
 		if (fileName == null) {
-			System.out.println("Invalid filename for createTreeFile");
+			log.error("Invalid filename for createTreeFile");
 			return null;
 		}
 		//

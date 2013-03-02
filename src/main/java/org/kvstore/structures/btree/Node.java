@@ -17,6 +17,7 @@ package org.kvstore.structures.btree;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import org.apache.log4j.Logger;
 import org.kvstore.holders.DataHolder;
 
 /**
@@ -29,8 +30,7 @@ import org.kvstore.holders.DataHolder;
  * @author Guillermo Grandes / guillermo.grandes[at]gmail.com
  */
 public abstract class Node<K extends DataHolder<K>, V extends DataHolder<V>> {
-	public static final boolean DEBUG = false;
-	public static final boolean DEBUG2 = false;
+	private static final Logger log = Logger.getLogger(Node.class);
 	public static final int NULL_ID = 0;
 	//
 	public final BplusTree<K, V> tree;
@@ -97,7 +97,7 @@ public abstract class Node<K extends DataHolder<K>, V extends DataHolder<V>> {
 		return (allocated <= 0);
 	}
 	public boolean isFull() { // node is full
-		//System.out.println("allocated=" + allocated + " keys.length=" + keys.length);
+		if (log.isDebugEnabled()) log.debug("allocated=" + allocated + " keys.length=" + keys.length);
 		return (allocated >= keys.length);
 	}
 	public boolean isUnderFlow() {
@@ -122,12 +122,12 @@ public abstract class Node<K extends DataHolder<K>, V extends DataHolder<V>> {
 
 	// insert element
 	protected void moveElementsRight(final Object[] elements, final int srcPos) {
-		//if (DEBUG) System.out.println("moveElementsRight("+srcPos+") allocated=" + allocated + ":" + keys.length + ":" + (allocated-srcPos) + ":" + (keys.length-srcPos-1));
+		if (log.isDebugEnabled()) log.debug("moveElementsRight("+srcPos+") allocated=" + allocated + ":" + keys.length + ":" + (allocated-srcPos) + ":" + (keys.length-srcPos-1));
 		System.arraycopy(elements, srcPos, elements, srcPos+1, allocated-srcPos);
 	}
 	// remove element
 	protected void moveElementsLeft(final Object[] elements, final int srcPos) {
-		//if (DEBUG) System.out.println("moveElementsLeft("+srcPos+") allocated=" + allocated + ":" + keys.length + ":" + (allocated-srcPos-1) + ":" + (keys.length-srcPos-1));
+		if (log.isDebugEnabled()) log.debug("moveElementsLeft("+srcPos+") allocated=" + allocated + ":" + keys.length + ":" + (allocated-srcPos-1) + ":" + (keys.length-srcPos-1));
 		System.arraycopy(elements, srcPos+1, elements, srcPos, allocated-srcPos-1);
 	}
 

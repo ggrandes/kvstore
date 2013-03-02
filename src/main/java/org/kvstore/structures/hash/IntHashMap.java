@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+import org.apache.log4j.Logger;
 import org.kvstore.utils.GenericFactory;
 import org.kvstore.utils.PrimeFinder;
 
@@ -31,6 +32,7 @@ import org.kvstore.utils.PrimeFinder;
  * @author Guillermo Grandes / guillermo.grandes[at]gmail.com
  */
 public class IntHashMap<V> implements Iterable<V> {
+	private static final Logger log = Logger.getLogger(IntHashMap.class);
 
 	private int elementCount;
 	private IntEntry<V>[] elementData;
@@ -187,7 +189,7 @@ public class IntHashMap<V> implements Iterable<V> {
 
 	void rehash(final int capacity) {
 		final int length = primeSize(capacity == 0 ? 1 : capacity << 1);
-		//System.out.println(this.getClass().getName() + "::rehash() old=" + elementData.length + " new=" + length);
+		if (log.isDebugEnabled()) log.debug(this.getClass().getName() + "::rehash() old=" + elementData.length + " new=" + length);
 
 		IntEntry<V>[] newData = newElementArray(length);
 		for (int i = 0; i < elementData.length; i++) {

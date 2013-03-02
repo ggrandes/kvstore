@@ -19,6 +19,7 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
+import org.apache.log4j.Logger;
 import org.kvstore.pool.BufferStacker;
 
 /**
@@ -28,7 +29,7 @@ import org.kvstore.pool.BufferStacker;
  * @author Guillermo Grandes / guillermo.grandes[at]gmail.com
  */
 public class FileBlockStore {
-	private static final boolean DEBUG = false;
+	private static final Logger log = Logger.getLogger(FileBlockStore.class);
 	/**
 	 * Size of block
 	 */
@@ -94,7 +95,8 @@ public class FileBlockStore {
 		if (isOpen()) {
 			close();
 		}
-		if (DEBUG) System.out.println("open("+file+")");
+		if (log.isDebugEnabled())
+			log.debug("open("+file+")");
 		try {
 			raf = new RandomAccessFile(file, "rw");
 			fileChannel = raf.getChannel();
@@ -149,7 +151,8 @@ public class FileBlockStore {
 		try {
 			final long len = file.length();
 			final long num_blocks = ((len / blockSize) + (((len % blockSize) == 0) ? 0 : 1));
-			if (DEBUG) System.out.println("size()=" + num_blocks);
+			if (log.isDebugEnabled())
+				log.debug("size()=" + num_blocks);
 			return (int) num_blocks;
 		}
 		catch(Exception e) {
@@ -199,7 +202,8 @@ public class FileBlockStore {
 	 */
 	public ByteBuffer get(final int index) {
 		if (!validState) throw new InvalidStateException();
-		if (DEBUG) System.out.println("get("+index+")");
+		if (log.isDebugEnabled())
+			log.debug("get("+index+")");
 		try {
 			//final ByteBuffer buf = ByteBuffer.allocate(ELEMENT_SIZE);
 			final ByteBuffer buf = bufstack.pop();
@@ -215,7 +219,8 @@ public class FileBlockStore {
 		}
 		catch(Exception e) {
 			e.printStackTrace();
-			System.out.println("index=" + index);
+			if (log.isDebugEnabled())
+				log.debug("index=" + index);
 		}
 		return null;
 	}
@@ -228,10 +233,11 @@ public class FileBlockStore {
 	 */
 	public boolean set(final int index, final ByteBuffer buf) {
 		if (!validState) throw new InvalidStateException();
-		if (DEBUG) System.out.println("set("+index+","+buf+")");
+		if (log.isDebugEnabled())
+			log.debug("set("+index+","+buf+")");
 		try {
 			if (buf.limit() > blockSize) {
-				System.err.println("ERROR: buffer.capacity="+buf.limit()+" > blocksize=" + blockSize);
+				log.error("ERROR: buffer.capacity="+buf.limit()+" > blocksize=" + blockSize);
 			}
 			if (mbb != null) {
 				mbb.limit((index + 1) * blockSize);

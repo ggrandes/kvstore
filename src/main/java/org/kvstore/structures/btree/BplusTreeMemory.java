@@ -48,7 +48,6 @@ public final class BplusTreeMemory<K extends DataHolder<K>, V extends DataHolder
 	public BplusTreeMemory(final int b_order, final Class<K> typeK, final Class<V> typeV) throws InstantiationException, IllegalAccessException {
 		super(false, true, b_order, typeK, typeV);
 		clearStates();
-		System.out.println("BplusTreeMemory.hashCode()=" + this.hashCode());
 	}
 
 	@Override

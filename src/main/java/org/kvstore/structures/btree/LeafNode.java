@@ -17,6 +17,7 @@ package org.kvstore.structures.btree;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import org.apache.log4j.Logger;
 import org.kvstore.holders.DataHolder;
 
 /**
@@ -29,6 +30,7 @@ import org.kvstore.holders.DataHolder;
  * @author Guillermo Grandes / guillermo.grandes[at]gmail.com
  */
 public final class LeafNode<K extends DataHolder<K>, V extends DataHolder<V>> extends Node<K, V> {
+	private static final Logger log = Logger.getLogger(LeafNode.class);
 	public final V[] values;
 	public int leftid = NULL_ID;
 	public int rightid = NULL_ID;
@@ -65,13 +67,13 @@ public final class LeafNode<K extends DataHolder<K>, V extends DataHolder<V>> ex
 
 	public boolean add(final K newKey, final V newValue) {
 		if (isFull()) { // node is full
-			if (DEBUG) System.out.println("overflow");
+			if (log.isDebugEnabled()) log.debug("overflow");
 			return false;
 		}
 		// TODO: Reparar
 		int slot = findSlotByKey(newKey); 
 		if (slot >= 0) {
-			if (DEBUG) System.out.println("key already exists: " + newKey);
+			if (log.isDebugEnabled()) log.debug("key already exists: " + newKey);
 			return false; // key already exist
 		}
 		slot = (-slot)-1;
@@ -79,7 +81,7 @@ public final class LeafNode<K extends DataHolder<K>, V extends DataHolder<V>> ex
 	}
 
 	public boolean add(final int slot, final K newKey, final V newValue) {
-		//if (DEBUG) System.out.println("add("+newKey+") i=" + slot);
+		//if (log.isDebugEnabled()) log.debug("add("+newKey+") i=" + slot);
 		if (slot < allocated) { 
 			moveElementsRight(keys, slot);
 			moveElementsRight(values, slot);
@@ -92,7 +94,7 @@ public final class LeafNode<K extends DataHolder<K>, V extends DataHolder<V>> ex
 	@Override
 	public boolean remove(final int slot) {
 		if (slot < 0) {
-			System.out.println("faking slot=" + slot + " allocated=" + allocated);
+			log.error("faking slot=" + slot + " allocated=" + allocated);
 			return false;
 		}
 		if (slot < allocated) { 
@@ -100,7 +102,7 @@ public final class LeafNode<K extends DataHolder<K>, V extends DataHolder<V>> ex
 			moveElementsLeft(values, slot);
 		}
 		if (allocated > 0) allocated--;
-		if (DEBUG) System.out.println("erased up key=" + keys[allocated] + " value="+ values[allocated]);
+		if (log.isDebugEnabled()) log.debug("erased up key=" + keys[allocated] + " value="+ values[allocated]);
 		keys[allocated] = null;
 		values[allocated] = null;
 		return true;
@@ -113,7 +115,7 @@ public final class LeafNode<K extends DataHolder<K>, V extends DataHolder<V>> ex
 		//int j = ((allocated >> 1) | (allocated & 1)); // dividir por dos y sumar el resto (0 o 1)
 		int j = (allocated >> 1); // dividir por dos (libro)
 		final int newsize = allocated-j;
-		//if (DEBUG) System.out.println("split j=" + j);
+		//if (log.isDebugEnabled()) log.debug("split j=" + j);
 		System.arraycopy(keys, j, newHigh.keys, 0, newsize);
 		System.arraycopy(values, j, newHigh.values, 0, newsize);
 		// Limpiar la parte alta de los arrays de referencias inutiles

@@ -76,7 +76,6 @@ public class Example {
 
 ## TODOs
 
-* Use Log4J
 * A lot of Doc
 * Describe disk formats
 * HashMap on disk
@@ -104,6 +103,7 @@ public class Example {
         * Strings
 * Create Factory
 * Options object for factory
+* Use Log4J
 
 
 ## MISC
