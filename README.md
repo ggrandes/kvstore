@@ -4,7 +4,7 @@ KVStore is a Key-Value Store for Memory & Disk (for BplusTree on disk, keys and 
 
 API is similar to [TreeMap](http://docs.oracle.com/javase/6/docs/api/java/util/TreeMap.html).
 
-### Currently in Development
+### Current Development Version is [0.0.3](https://s3-eu-west-1.amazonaws.com/github-ggrandes/kvstore/kvstore-0.0.3.jar)
 
 ---
 
