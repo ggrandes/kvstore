@@ -475,7 +475,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	 * @throws IllegalAccessException
 	 * @throws InstantiationException
 	 */
-	public synchronized boolean recovery(final boolean forceFullRecovery) throws InstantiationException, IllegalAccessException {
+	public synchronized boolean recovery(final boolean forceFullRecovery) {
 		if (storage.isOpen() || redoStore.isOpen()) {
 			throw new InvalidStateException();
 		}
@@ -521,7 +521,15 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			log.info("Recovery in Full Mode (Scan datafiles)");
 			//
 			final int blocks = storage.sizeInBlocks();
-			treeTmp = new BplusTreeFile<K, V>(autoTune, b_size, getGenericFactoryK().type, getGenericFactoryV().type, fileName + ".recover");
+			try {
+				treeTmp = new BplusTreeFile<K, V>(autoTune, b_size, getGenericFactoryK().type, getGenericFactoryV().type, fileName + ".recover");
+			} catch (InstantiationException e) {
+				log.error("InstantiationException in recovery()", e);
+				return false;
+			} catch (IllegalAccessException e) {
+				log.error("IllegalAccessException in recovery()", e);
+				return false;
+			}
 			//
 			treeTmp.clear();
 			treeTmp.setUseRedo(false);
