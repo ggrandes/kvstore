@@ -610,27 +610,27 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	 */
 	public synchronized boolean open() throws InvalidDataException {
 		boolean allRight = false;
-		boolean isNew = false;
 		if (storage.isOpen() || redoStore.isOpen()) {
 			throw new InvalidStateException();
 		}
 		storage.open();
 		redoStore.open();
 		try {
-			if (storage.sizeInBlocks() == 0) {
+			if ((storage.sizeInBlocks() == 0) && (redoStore.isEmpty())) {
 				clearStates();
-				isNew = true;
+				validState = true;
+				return true;
 			}
 			try {
 				boolean isClean = readMetaData();
 				//log.debug(this.hashCode() + "::open() clean=" + isClean);
-				if (isClean && !isNew) {
+				if (isClean) {
 					if (writeMetaData(false)) {
 						populateCache();
 						allRight = true;
 					}
 				}
-				else if (!isNew) {
+				else {
 					// Broken
 					throw new InvalidDataException("NEED RECOVERY");
 				}

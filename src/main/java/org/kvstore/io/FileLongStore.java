@@ -20,6 +20,8 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
+import org.apache.log4j.Logger;
+
 /**
  * File for store one Long value with history for crash recovery
  * This class is Thread-Safe
@@ -27,6 +29,7 @@ import java.nio.channels.FileChannel;
  * @author Guillermo Grandes / guillermo.grandes[at]gmail.com
  */
 public class FileLongStore {
+	private static final Logger log = Logger.getLogger(FileLongStore.class);
 	/**
 	 * File associated to this store
 	 */
@@ -83,7 +86,7 @@ public class FileLongStore {
 			fc = raf.getChannel();
 		}
 		catch(Exception e) {
-			e.printStackTrace();
+			log.error("Exception in open()", e);
 			try { close(); } catch(Exception ign) {}
 		}
 		validState = isOpen();
@@ -136,7 +139,7 @@ public class FileLongStore {
 			return file.length();
 		}
 		catch(Exception e) {
-			e.printStackTrace();
+			log.error("Exception in size()", e);
 		}
 		return -1;
 	}
@@ -155,7 +158,7 @@ public class FileLongStore {
 			open();
 		}
 		catch(Exception e) {
-			e.printStackTrace();
+			log.error("Exception in clear()", e);
 		}
 	}
 
@@ -248,7 +251,7 @@ public class FileLongStore {
 			return true;
 		}
 		catch(Exception e) {
-			e.printStackTrace();
+			log.error("Exception in sync()", e);
 		}
 		return false;
 	}

@@ -102,7 +102,7 @@ public class FileBlockStore {
 			fileChannel = raf.getChannel();
 		}
 		catch(Exception e) {
-			e.printStackTrace();
+			log.error("Exception in open()", e);
 			try { fileChannel.close(); } catch(Exception ign) {}
 			try { raf.close(); } catch(Exception ign) {}
 			raf = null;
@@ -156,7 +156,7 @@ public class FileBlockStore {
 			return (int) num_blocks;
 		}
 		catch(Exception e) {
-			e.printStackTrace();
+			log.error("Exception in sizeInBlocks()", e);
 		}
 		return -1;
 	}
@@ -173,7 +173,7 @@ public class FileBlockStore {
 			sync();
 		}
 		catch(Exception e) {
-			e.printStackTrace();
+			log.error("Exception in clear()", e);
 		}
 	}
 
@@ -218,9 +218,7 @@ public class FileBlockStore {
 			return buf;
 		}
 		catch(Exception e) {
-			e.printStackTrace();
-			if (log.isDebugEnabled())
-				log.debug("index=" + index);
+			log.error("Exception in get("+index+")", e);
 		}
 		return null;
 	}
@@ -250,7 +248,7 @@ public class FileBlockStore {
 			return true;
 		}
 		catch(Exception e) {
-			e.printStackTrace();
+			log.error("Exception in set("+index+")", e);
 		}
 		return false;
 	}

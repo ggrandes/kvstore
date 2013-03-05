@@ -2,7 +2,10 @@ package org.kvstore;
 
 import java.util.HashMap;
 
+import org.apache.log4j.Logger;
+
 public class Options {
+	private static final Logger log = Logger.getLogger(Options.class);
 	private final HashMap<String, String> opts = new HashMap<String, String>();
 	//
 	// String
@@ -36,7 +39,7 @@ public class Options {
 				return Integer.parseInt(value);
 			}
 		} catch (NumberFormatException e) {
-			e.printStackTrace(System.out);
+			log.error("NumberFormatException in getInt("+key+")", e);
 		}
 		return defaultValue;
 	}
