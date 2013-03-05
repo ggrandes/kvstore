@@ -33,6 +33,19 @@ public class Example {
 				.set(KVStoreFactory.FILENAME, btreeFile);
 		BplusTreeFile<IntHolder, IntHolder> tree = factory.createTreeFile(opts);
 		//
+		// Open & Recovery tree if needed
+		try {
+			if (tree.open())
+				System.out.println("open tree ok");
+		} catch (InvalidDataException e) {
+			System.out.println("open tree error, recovery needed");
+			if (tree.recovery(false) && tree.open()) {
+				System.out.println("recovery ok, tree opened");
+			} else {
+				throw new Exception("Fatal Error Opening Tree");
+			}
+		}
+		// clear all previous content if any
 		tree.clear();
 		// ============== PUT
 		for (int i = 0; i < keys.length; i++) {
