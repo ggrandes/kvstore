@@ -690,7 +690,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	 * @param useRedo (default true)
 	 */
 	public synchronized void setUseRedo(final boolean useRedo) {
-		if (this.useRedo && !useRedo) { // Remove Redo
+		if (validState && this.useRedo && !useRedo) { // Remove Redo
 			redoQueue.clear();
 			redoStore.clear();
 		}
