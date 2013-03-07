@@ -376,6 +376,23 @@ public class IntLinkedHashMap<V> implements Iterable<V> {
 			after.before = this;
 		}
 
+		/**
+		 * Returns the key corresponding to this entry.
+		 *
+		 * @return the key corresponding to this entry
+		 */
+		public int getKey() {
+			return key;
+		}
+		
+		/**
+		 * Returns the value corresponding to this entry.
+		 *
+		 * @return the value corresponding to this entry
+		 */
+		public V getValue() {
+			return value;
+		}
 	}
 
 	// ========== Linked List
