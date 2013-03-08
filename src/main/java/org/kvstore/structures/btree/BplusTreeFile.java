@@ -686,6 +686,17 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	}
 
 	/**
+	 * Clear tree and Delete associated files
+	 */
+	public synchronized void delete() {
+		try { clear(); } catch (Exception ign) {}
+		try { close(); } catch (Exception ign) {}
+		try { fileRedo.delete(); } catch (Exception ign) {}
+		try { fileStorage.delete(); } catch (Exception ign) {}
+		try { fileFreeBlocks.delete(); } catch (Exception ign) {}
+	}
+
+	/**
 	 * Use Redo system?
 	 * @param useRedo (default true)
 	 */
