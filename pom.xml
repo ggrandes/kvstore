@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.kvstore</groupId>
 	<artifactId>kvstore</artifactId>
-	<version>0.0.6</version>
+	<version>0.0.7</version>
 	<dependencies>
 		<dependency>
 			<groupId>log4j</groupId>
