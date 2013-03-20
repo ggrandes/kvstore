@@ -115,6 +115,8 @@ Add the KVStore dependency to your pom.xml:
 * A lot of Doc
 * Describe disk formats
 * HashMap on disk
+* Shared cache
+* Separate size of read cache and write cache
 
 ## DONEs
 
