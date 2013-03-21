@@ -134,10 +134,12 @@ Add the KVStore dependency to your pom.xml:
 * HashMaps for natives (memory) 
 * Holders for data and NIO serialization
     * Fixed length
-        * Booleans
-        * Integers
-        * Longs
-        * Nulls
+        * Boolean
+        * Byte
+        * Short
+        * Integer
+        * Long
+        * Null
     * Variable length
         * Strings
 * Create Factory
