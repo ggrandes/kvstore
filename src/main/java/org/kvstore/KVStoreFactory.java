@@ -28,6 +28,7 @@ public class KVStoreFactory<K extends DataHolder<K>, V extends DataHolder<V>> {
 	public static final String AUTO_TUNE = "opt.kvstore.persistence.boolean.autotune"; // Boolean
 	public static final String USE_REDO = "opt.kvstore.persistence.boolean.useredo"; // Boolean
 	public static final String USE_REDO_THREAD = "opt.kvstore.persistence.boolean.useredothread"; // Boolean
+	public static final String DISABLE_POPULATE_CACHE = "opt.kvstore.persistence.boolean.disablepopulatecache"; // Boolean
 	public static final String B_SIZE = "opt.kvstore.btree.int.bsize"; // int
 	//
 	final Class<K> typeK;
@@ -67,6 +68,8 @@ public class KVStoreFactory<K extends DataHolder<K>, V extends DataHolder<V>> {
 		tree.setUseRedo(useRedo);
 		final boolean useRedoThread = opts.getBoolean(USE_REDO_THREAD, false);
 		tree.setUseRedoThread(useRedoThread);
+		final boolean disablePopulateCache = opts.getBoolean(DISABLE_POPULATE_CACHE, false);
+		tree.setDisablePopulateCache(disablePopulateCache);
 		//
 		return tree;
 	}

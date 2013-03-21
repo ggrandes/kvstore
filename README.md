@@ -117,7 +117,6 @@ Add the KVStore dependency to your pom.xml:
 * HashMap on disk
 * Shared cache
 * Separate size of read cache and write cache
-* Allow open without populate read cache
 
 ## DONEs
 
@@ -146,6 +145,7 @@ Add the KVStore dependency to your pom.xml:
 * Options object for factory
 * Use Log4J
 * Maven repository
+* Allow open without populate read cache
 
 
 ## MISC

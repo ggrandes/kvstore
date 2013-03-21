@@ -52,7 +52,6 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	 * Disable all Caches
 	 */
 	private final boolean disableAllCaches = false;
-
 	/**
 	 * Full erase of block when freed
 	 */
@@ -123,6 +122,10 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	 * Use Dedicated Thread for Redo?
 	 */
 	private boolean useRedoThread = false;
+	/**
+	 * Disable Populate Cache
+	 */
+	private boolean disablePopulateCache = false;
 
 	/**
 	 * Redo Queue for Dedicated Thread
@@ -720,6 +723,16 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		this.useRedoThread = useRedoThread;
 	}
 
+	/**
+	 * Disable Populate Cache?
+	 * Populate Caches is pre-read datastore to cache nodes
+	 * @param disablePopulateCache (default false)
+	 */
+	public synchronized void setDisablePopulateCache(final boolean disablePopulateCache) {
+		this.disablePopulateCache = disablePopulateCache;
+	}
+		
+	
 	private void createRedoThread() {
 		if (useRedoThread && (redoThread == null)) {
 			redoThread = new Thread(new Runnable() {
@@ -1002,7 +1015,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	 * Populate read cache if cache is enabled
 	 */
 	private void populateCache() {
-		if (disableAllCaches) return;
+		if (disableAllCaches || disablePopulateCache) return;
 		// Populate Cache
 		final long ts = System.currentTimeMillis();
 		for (int index = 1; ((index < storageBlock) && (cacheInternalNodes.size() < readCacheInternal) && (cacheLeafNodes.size() < readCacheLeaf)); index++) {
