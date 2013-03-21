@@ -115,7 +115,6 @@ Add the KVStore dependency to your pom.xml:
 * A lot of Doc
 * Describe disk formats
 * HashMap on disk
-* Shared cache
 * Separate size of read cache and write cache
 
 ## DONEs
@@ -130,6 +129,7 @@ Add the KVStore dependency to your pom.xml:
         * Reuse free blocks on disk
         * Redo log
         * Recovery system
+        * Allow open without populate read cache
 * HashMaps for natives (memory) 
 * Holders for data and NIO serialization
     * Fixed length
@@ -145,7 +145,6 @@ Add the KVStore dependency to your pom.xml:
 * Options object for factory
 * Use Log4J
 * Maven repository
-* Allow open without populate read cache
 
 
 ## MISC
