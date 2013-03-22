@@ -15,8 +15,6 @@
 package org.kvstore.holders;
 import java.nio.ByteBuffer;
 
-import org.kvstore.structures.hash.FixedIntHashMap;
-
 /**
  * Holder for Byte values
  *
@@ -24,20 +22,18 @@ import org.kvstore.structures.hash.FixedIntHashMap;
  */
 public final class ByteHolder extends DataHolder<ByteHolder> {
 	//
-	private static final FixedIntHashMap<ByteHolder> cache = new FixedIntHashMap<ByteHolder>(4096, ByteHolder.class);
+	private static final ByteHolder[] cache = new ByteHolder[256];
+	//
+	static {
+		for(int i = 0; i < cache.length; i++) {
+			cache[i] = new ByteHolder((byte)(i - 128));
+		}
+	}
 	//
 	private final byte value;
 	//
 	public static ByteHolder valueOf(final byte value) {
-		final ByteHolder cachedKey = cache.get(value);
-		if (cachedKey != null) {
-			if (cachedKey.value == value) {
-				return cachedKey;
-			}
-		}
-		final ByteHolder newKey = new ByteHolder(value);
-		cache.put(value, newKey);
-		return newKey;
+		return cache[(int)value + 128];
 	}
 
 	/**
@@ -90,6 +86,5 @@ public final class ByteHolder extends DataHolder<ByteHolder> {
 	public ByteHolder deserialize(ByteBuffer buf) {
 		return valueOf(buf.get());
 	}
-
 }
 
