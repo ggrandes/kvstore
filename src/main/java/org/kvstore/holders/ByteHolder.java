@@ -49,6 +49,36 @@ public final class ByteHolder extends DataHolder<ByteHolder> {
 		return value;
 	}
 
+	// ========= Bit Operation methods =========
+	
+	/**
+	 * MSB-left (76543210), 0x7F=127=01111111
+	 * @param bitIndex to check
+	 * @return true=1, false=0
+	 */
+	public boolean get(final int bitIndex) {
+		if (bitIndex > 7 || bitIndex < 0) throw new IndexOutOfBoundsException(); 
+		return (((((int)value) >> bitIndex) & 1) == 1);
+	}
+	/**
+	 * MSB-left (76543210), 0x7F=127=01111111
+	 * @param bitIndex to set
+	 * @return new ByteHolder with bits updated
+	 */
+	public ByteHolder set(final int bitIndex) {
+		if (bitIndex > 7 || bitIndex < 0) throw new IndexOutOfBoundsException(); 
+		return valueOf((byte)(value | (1 << bitIndex)));
+	}
+	/**
+	 * MSB-left (76543210), 0x7F=127=01111111
+	 * @param bitIndex to clear
+	 * @return new ByteHolder with bits updated
+	 */
+	public ByteHolder clear(final int bitIndex) {
+		if (bitIndex > 7 || bitIndex < 0) throw new IndexOutOfBoundsException(); 
+		return valueOf((byte)(value & ~(1 << bitIndex)));
+	}
+
 	// ========= Basic Object methods =========
 
 	public String toString() {
