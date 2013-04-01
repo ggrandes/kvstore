@@ -58,7 +58,7 @@ public final class StringHolder extends DataHolder<StringHolder> {
 
 	public boolean equals(final Object obj) {
 		if (obj instanceof StringHolder) {
-			return value.equals(obj);
+			return value.equals(((StringHolder)obj).value);
 		}
 		return false;
 	}
