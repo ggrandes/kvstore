@@ -4,7 +4,7 @@ KVStore is a Key-Value Store for Memory & Disk (for BplusTree on disk, keys and 
 
 API is similar to [TreeMap](http://docs.oracle.com/javase/6/docs/api/java/util/TreeMap.html).
 
-### Current Development Version is [0.0.8](https://maven-release.s3.amazonaws.com/release/org/kvstore/kvstore/0.0.8/kvstore-0.0.8.jar)
+### Current Development Version is [0.0.9](https://maven-release.s3.amazonaws.com/release/org/kvstore/kvstore/0.0.9/kvstore-0.0.9.jar)
 
 ---
 
@@ -105,7 +105,7 @@ Add the KVStore dependency to your pom.xml:
     <dependency>
         <groupId>org.kvstore</groupId>
         <artifactId>kvstore</artifactId>
-        <version>0.0.8</version>
+        <version>0.0.9</version>
     </dependency>
 
 ---
