@@ -105,6 +105,7 @@ public class KVStoreFactory<K extends DataHolder<K>, V extends DataHolder<V>> {
 		.set(B_SIZE, 1024)
 		.set(USE_REDO, false)
 		.set(USE_REDO_THREAD, false)
+		.set(DISABLE_AUTOSYNC_STORE, true)
 		.set(CACHE_SIZE, 128*1024*1024);
 		return opts;
 	}
