@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.kvstore</groupId>
 	<artifactId>kvstore</artifactId>
-	<version>0.0.9</version>
+	<version>0.0.10</version>
 	<dependencies>
 		<dependency>
 			<groupId>log4j</groupId>
@@ -27,6 +27,7 @@
 				<configuration>
 					<excludes>
 						<exclude>**/log4j.properties</exclude>
+						<exclude>**/sandbox/*</exclude>
 					</excludes>
 				</configuration>
 			</plugin>

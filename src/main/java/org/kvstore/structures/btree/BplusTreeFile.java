@@ -126,6 +126,10 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	 * Disable Populate Cache
 	 */
 	private boolean disablePopulateCache = false;
+	/**
+	 * Disable Auto Sync Store
+	 */
+	private boolean disableAutoSyncStore = false;
 
 	/**
 	 * Redo Queue for Dedicated Thread
@@ -324,7 +328,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		// Commit excess write-buffers
 		final boolean autoSync = (initialDirtyNodesInMem >= (maxTotalNodes/10)); // 10% of nodes are dirty
 		if (autoSync) {
-			privateSync(true);
+			privateSync(true, false);
 		}
 		//
 		// Discard excess read-buffers
@@ -731,8 +735,16 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	public synchronized void setDisablePopulateCache(final boolean disablePopulateCache) {
 		this.disablePopulateCache = disablePopulateCache;
 	}
-		
-	
+
+	/**
+	 * Disable AutoSync Storage?
+	 * If disable is true, when autoSync is invoked, storage sync is not forced (speed-up, but less secure)
+	 * @param disableAutoSyncStore (default false)
+	 */
+	public synchronized void setDisableAutoSyncStore(final boolean disableAutoSyncStore) {
+		this.disableAutoSyncStore = disableAutoSyncStore;
+	}
+
 	private void createRedoThread() {
 		if (useRedoThread && (redoThread == null)) {
 			redoThread = new Thread(new Runnable() {
@@ -957,7 +969,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	public synchronized void setMaxCacheSizeInBytes(final int newsize) {
 		if (validState) {
 			log.info(this.getClass().getName() + "::setMaxCacheSizeInBytes newsize=" + newsize + " flushing write-cache");
-			privateSync(true);
+			privateSync(true, false);
 			clearReadCaches();
 		}
 		if (newsize >= 1024) { // 1KB minimal
@@ -1109,7 +1121,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	public synchronized void sync() {
 		if (!validState) throw new InvalidStateException();
 		try {
-			privateSync(true);
+			privateSync(true, true);
 		}
 		finally {
 			releaseNodes();
@@ -1128,7 +1140,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	 * Write all dirty nodes
 	 */
 	@SuppressWarnings("unchecked")
-	private void privateSync(final boolean syncInternal) {
+	private void privateSync(final boolean syncInternal, final boolean forceSyncStore) {
 		final long ts = System.currentTimeMillis();
 		boolean isDirty = false;
 		if (!dirtyLeafNodes.isEmpty() || !dirtyInternalNodes.isEmpty()) {
@@ -1170,7 +1182,8 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		//
 		if (isDirty) {
 			writeMetaData(false);
-			storage.sync();
+			if (forceSyncStore || !disableAutoSyncStore)
+				storage.sync();
 			redoQueue.clear();
 			redoStore.clear();
 		}
