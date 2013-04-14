@@ -170,14 +170,13 @@ public abstract class Node<K extends DataHolder<K>, V extends DataHolder<V>> {
 		buf.putLong(0);			// 8 bytes
 		buf.flip();
 	}
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public static Node deserialize(final ByteBuffer buf, final BplusTree tree) {
+	public static <K extends DataHolder<K>, V extends DataHolder<V>> Node<K, V> deserialize(final ByteBuffer buf, final BplusTree<K, V>  tree) {
 		final int id = buf.getInt();
 		if (id == NULL_ID) {
 			throw InvalidNodeID.NULL_ID;
 		}
 		final boolean isLeaf = isLeaf(id);
-		final Node node = (isLeaf ? tree.createLeafNode() : tree.createInternalNode());
+		final Node<K, V> node = (isLeaf ? tree.createLeafNode() : tree.createInternalNode());
 		node.id = id;
 		return node.deserializeNode(buf);
 	}
