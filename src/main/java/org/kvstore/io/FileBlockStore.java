@@ -377,16 +377,13 @@ public class FileBlockStore {
 		@SuppressWarnings("unchecked")
 		final BufferReference<MappedByteBuffer>[] maps = mmaps.getValues();
 		Arrays.sort(maps, comparatorByIdx);
-		int synched = 0;
 		for (final Reference<MappedByteBuffer> ref : maps) {
 			if (ref == null) break;
 			final MappedByteBuffer mbb = ref.get();
 			if (mbb != null) {
 				try { mbb.force(); } catch(Exception ign) {}
-				synched++;
 			}
 		}
-		System.out.println("syncAllMmaps() synched=" + synched);
 	}
 
 	static class BufferReference<T extends MappedByteBuffer> extends SoftReference<T> {
