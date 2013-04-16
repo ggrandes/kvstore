@@ -138,7 +138,7 @@ public final class FileStreamStore {
 			fcOutput = osOutput.getChannel();
 			rafInput = new RandomAccessFile(file, "r");
 			fcInput = rafInput.getChannel();
-			offsetOutputUncommited = offsetOutputCommited = fcOutput.position();
+			offsetOutputUncommited = offsetOutputCommited = fcOutput.size();
 		}
 		catch(Exception e) {
 			log.error("Exception in open()", e);
