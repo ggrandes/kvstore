@@ -119,8 +119,9 @@ Add the KVStore dependency to your pom.xml:
 
 ## DONEs
 
-* Block Store (Fixed length chunks)
-* Stream Store (Variable length chunks)
+* BlockStore (Fixed length chunks)
+    * Support for mmaped files
+* StreamStore (Variable length chunks)
 * B+Tree for Index
     * Buffer reuse
     * Memory mode
@@ -145,7 +146,6 @@ Add the KVStore dependency to your pom.xml:
 * Options object for factory
 * Use Log4J
 * Maven repository
-* Support for mmaped files
 
 
 ## MISC
