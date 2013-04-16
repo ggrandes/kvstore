@@ -212,16 +212,14 @@ public class FileBlockStore {
 		if (log.isDebugEnabled())
 			log.debug("get("+index+")");
 		try {
-			//final ByteBuffer buf = ByteBuffer.allocate(ELEMENT_SIZE);
-			final ByteBuffer buf = bufstack.pop();
 			if (useMmap) {
 				final MappedByteBuffer mbb = getMmapForIndex(index);
 				if (mbb != null) {
-					buf.put(mbb);
-					return buf;
+					return mbb;
 				}
 				// Fallback to RAF
 			}
+			final ByteBuffer buf = bufstack.pop();
 			fileChannel.position(index * blockSize).read(buf);
 			buf.rewind();
 			return buf;
@@ -265,6 +263,29 @@ public class FileBlockStore {
 	}
 
 	/**
+	 * Alloc a WriteBuffer
+	 * @param index of block
+	 * @return WriteBuffer
+	 */
+	public WriteBuffer set(final int index) {
+		if (useMmap) {
+			final ByteBuffer buf = getMmapForIndex(index);
+			if (buf != null) {
+				return new WriteBuffer(this, index, useMmap, buf);
+			}
+		}
+		return new WriteBuffer(this, index, false, bufstack.pop());
+	}
+	/**
+	 * Release Read ByteBuffer
+	 * @param buf readed ByteBuffer
+	 */
+	public void release(final ByteBuffer buf) {
+		if (!useMmap)
+			bufstack.push(buf);
+	}
+	
+	/**
 	 * Forces any updates to this file to be written to the storage device that contains it. 
 	 */
 	public void sync() {
@@ -283,6 +304,29 @@ public class FileBlockStore {
 		public void synched();
 	}
 
+	public static class WriteBuffer {
+		private final FileBlockStore storage;
+		private final int index;
+		private final boolean mmaped;
+		private ByteBuffer buf;
+		private WriteBuffer(final FileBlockStore storage, final int index, final boolean mmaped, final ByteBuffer buf) {
+			this.storage = storage;
+			this.index = index;
+			this.mmaped = mmaped;
+			this.buf = buf;
+		}
+		public ByteBuffer buf() {
+			return buf;
+		}
+		public boolean save() {
+			if (mmaped)
+				return true;
+			final boolean ret = storage.set(index, buf);
+			buf = null;
+			return ret;
+		}
+	}
+	
 	// ========= Mmap ===============
 
 	private static final boolean useSegments = true;
@@ -322,6 +366,11 @@ public class FileBlockStore {
 	 */
 	public void enableMmap() {
 		if (validState) throw new InvalidStateException();
+		if (Check64bitsJVM.JVMis64bits()) {
+			log.info("Enabled mmap on 64bits JVM");
+		} else {
+			log.warn("Enabled mmap on 32bits JVM, risk of: java.lang.OutOfMemoryError: Map failed");
+		}
 		useMmap = true;
 	}
 	/**
@@ -330,6 +379,11 @@ public class FileBlockStore {
 	public void enableMmapIfSupported() {
 		if (validState) throw new InvalidStateException();
 		useMmap = Check64bitsJVM.JVMis64bits();
+		if (useMmap) {
+			log.info("Enabled mmap on 64bits JVM");
+		} else {
+			log.info("Disabled mmap on 32bits JVM");
+		}
 	}
 
 	private final int addressIndexToSegment(final int index) {
@@ -340,6 +394,7 @@ public class FileBlockStore {
 	}
 
 	public final MappedByteBuffer getMmapForIndex(final int index) {
+		if (!validState) throw new InvalidStateException();
 		final int mapIdx = (useSegments ? addressIndexToSegment(index) : index);
 		final int mapSize = (useSegments ? segmentSize : blockSize);
 		try {

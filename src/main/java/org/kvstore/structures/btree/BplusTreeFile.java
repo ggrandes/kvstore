@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.log4j.Logger;
 import org.kvstore.holders.DataHolder;
 import org.kvstore.io.FileBlockStore;
+import org.kvstore.io.FileBlockStore.WriteBuffer;
 import org.kvstore.io.FileBlockStore.CallbackSync;
 import org.kvstore.io.FileStreamStore;
 import org.kvstore.pool.BufferStacker;
@@ -262,7 +263,6 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	 * @param nodeid int with nodeid
 	 * @return Node<K,V>
 	 */
-	@SuppressWarnings("unchecked")
 	private Node<K, V> getNodeFromStore(final int nodeid) {
 		final int index = nodeid < 0 ? -nodeid : nodeid;
 		final ByteBuffer buf = storage.get(index);
@@ -270,7 +270,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		if (rootIdx == node.id) {
 			log.warn(this.getClass().getName() + "::getNodeFromStore(" + nodeid + ") WARN ROOT NODE READED");
 		}
-		bufstack.push(buf);
+		storage.release(buf);
 		if (enableIOStats) getIOStat(nodeid).incPhysRead();
 		return node;
 	}
@@ -290,7 +290,8 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	private void putNodeToStore(final Node<K, V> node) {
 		final int nodeid = node.id;
 		final int index = (nodeid < 0 ? -nodeid : nodeid);
-		final ByteBuffer buf = bufstack.pop();
+		final WriteBuffer wbuf = storage.set(index);
+		final ByteBuffer buf = wbuf.buf();
 		if (node.isDeleted()) { 	// This block is for delete
 			if (cleanBlocksOnFree) {
 				buf.clear();
@@ -308,7 +309,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		else {
 			node.serialize(buf);
 		}
-		storage.set(index, buf);
+		wbuf.save();
 		if (enableDirtyCheck) dirtyCheck.clear(index);
 		if (enableIOStats) getIOStat(nodeid).incPhysWrite();
 	}
@@ -384,24 +385,26 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	 * @return boolean if write is ok
 	 */
 	private boolean writeMetaData(final boolean isClean) {
-		final ByteBuffer buf = bufstack.pop();
+		final WriteBuffer wbuf = storage.set(0);
+		final ByteBuffer buf = wbuf.buf();
 		boolean isOK = false;
-		buf.putInt(MAGIC_1);
-		buf.putInt(blockSize);
-		buf.putInt(b_order_leaf);
-		buf.putInt(b_order_internal);
-		buf.putInt(storageBlock);
-		buf.putInt(rootIdx);
-		buf.putInt(lowIdx);
-		buf.putInt(highIdx);
-		buf.putInt(elements);
-		buf.putInt(height);
-		buf.putInt(maxInternalNodes);
-		buf.putInt(maxLeafNodes);
-		buf.put((byte) (isClean ? 0xEA : 0x00));
-		buf.putInt(MAGIC_2);
-		buf.flip();
-		isOK = storage.set(0, buf);
+		buf
+		.putInt(MAGIC_1)
+		.putInt(blockSize)
+		.putInt(b_order_leaf)
+		.putInt(b_order_internal)
+		.putInt(storageBlock)
+		.putInt(rootIdx)
+		.putInt(lowIdx)
+		.putInt(highIdx)
+		.putInt(elements)
+		.putInt(height)
+		.putInt(maxInternalNodes)
+		.putInt(maxLeafNodes)
+		.put((byte) (isClean ? 0xEA : 0x00))
+		.putInt(MAGIC_2)
+		.flip();
+		isOK = wbuf.save();
 		if (isClean)
 			storage.sync();
 		try {
@@ -450,7 +453,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		if (magic2 != MAGIC_2) throw new InvalidDataException("Invalid metadata (MAGIC2)");
 		if (log.isDebugEnabled())
 			log.debug(this.getClass().getName() + "::readMetaData() elements=" + elements + " rootIdx=" + rootIdx);
-		bufstack.push(buf);
+		storage.release(buf);
 		// Clear Caches
 		clearReadCaches();
 		clearWriteCaches();
@@ -540,6 +543,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			//
 			treeTmp.clear();
 			treeTmp.setUseRedo(false);
+			treeTmp.setDisableAutoSyncStore(true);
 			//
 			// Reconstruct Tree, Scan BlockStore for data
 			log.info("Blocks to Scan: " + blocks);
@@ -743,6 +747,25 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	 */
 	public synchronized void setDisableAutoSyncStore(final boolean disableAutoSyncStore) {
 		this.disableAutoSyncStore = disableAutoSyncStore;
+	}
+	
+	/**
+	 * Enable mmap of files (default is not enabled), call before use {@link #open()}
+	 * <p/>
+	 * Recommended use of: {@link #enableMmapIfSupported()}
+	 * <p/>
+	 * <b>NOTE:</b> 32bit JVM can only address 2GB of memory, enable mmap can throw <b>java.lang.OutOfMemoryError: Map failed</b> exceptions
+	 */
+	public synchronized void enableMmap() {
+		if (validState) throw new InvalidStateException();
+		storage.enableMmap();
+	}
+	/**
+	 * Enable mmap of files (default is not enabled) if JVM is 64bits, call before use {@link #open()}
+	 */
+	public synchronized void enableMmapIfSupported() {
+		if (validState) throw new InvalidStateException();
+		storage.enableMmapIfSupported();
 	}
 
 	private void createRedoThread() {

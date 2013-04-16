@@ -30,6 +30,8 @@ public class KVStoreFactory<K extends DataHolder<K>, V extends DataHolder<V>> {
 	public static final String USE_REDO_THREAD = "opt.kvstore.persistence.boolean.useredothread"; // Boolean
 	public static final String DISABLE_POPULATE_CACHE = "opt.kvstore.persistence.boolean.disablepopulatecache"; // Boolean
 	public static final String DISABLE_AUTOSYNC_STORE = "opt.kvstore.persistence.boolean.disableautosyncstore"; // Boolean
+	public static final String ENABLE_MMAP = "opt.kvstore.persistence.boolean.enablemmap"; // Boolean
+	public static final String ENABLE_MMAP_IF_SUPPORTED = "opt.kvstore.persistence.boolean.enablemmapifsupported"; // Boolean
 
 	public static final String B_SIZE = "opt.kvstore.btree.int.bsize"; // int
 	//
@@ -74,6 +76,12 @@ public class KVStoreFactory<K extends DataHolder<K>, V extends DataHolder<V>> {
 		tree.setDisablePopulateCache(disablePopulateCache);
 		final boolean disableAutoSyncStore = opts.getBoolean(DISABLE_AUTOSYNC_STORE, false);
 		tree.setDisableAutoSyncStore(disableAutoSyncStore);
+		final boolean enableMmap = opts.getBoolean(ENABLE_MMAP, false);
+		if (enableMmap)
+			tree.enableMmap();
+		final boolean enableMmapIfSupported = opts.getBoolean(ENABLE_MMAP_IF_SUPPORTED, false);
+		if (enableMmapIfSupported)
+			tree.enableMmapIfSupported();
 		//
 		return tree;
 	}

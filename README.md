@@ -116,7 +116,6 @@ Add the KVStore dependency to your pom.xml:
 * Describe disk formats
 * HashMap on disk
 * Separate size of read cache and write cache
-* Support for mmaped files (without typical OutOfMemoryError in 32bits)
 
 ## DONEs
 
@@ -146,6 +145,7 @@ Add the KVStore dependency to your pom.xml:
 * Options object for factory
 * Use Log4J
 * Maven repository
+* Support for mmaped files
 
 
 ## MISC
