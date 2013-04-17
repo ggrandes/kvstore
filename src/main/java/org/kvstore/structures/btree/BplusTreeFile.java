@@ -778,8 +778,10 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 						ByteBuffer buf = null; 
 						while (!doShutdownRedoThread.get()) {
 							buf = redoQueue.poll(1000, TimeUnit.MILLISECONDS);
-							if (buf != null)
+							if (buf != null) {
 								redoStore.write(buf);
+								bufstack.push(buf);
+							}
 						}
 						endProcess();
 					}
@@ -829,7 +831,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	protected void submitRedoPut(final K key, final V value) {
 		if (!useRedo) return;
 		createRedoThread();
-		final ByteBuffer buf = (useRedoThread ? ByteBuffer.allocate(2+key.byteLength()+value.byteLength()) : bufstack.pop());
+		final ByteBuffer buf = bufstack.pop();
 		buf.put((byte) 0x0A); // PUT HEADER
 		key.serialize(buf);
 		value.serialize(buf);
@@ -855,7 +857,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	protected void submitRedoRemove(final K key) {
 		if (!useRedo) return;
 		createRedoThread();
-		final ByteBuffer buf = (useRedoThread ? ByteBuffer.allocate(2+key.byteLength()) : bufstack.pop());
+		final ByteBuffer buf = bufstack.pop();
 		buf.put((byte) 0x0B); // REMOVE HEADER
 		key.serialize(buf);
 		buf.put((byte) 0x0B); // REMOVE FOOTER
@@ -880,7 +882,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	protected void submitRedoMeta(final int futureUse) {
 		if (!useRedo) return;
 		createRedoThread();
-		final ByteBuffer buf = (useRedoThread ? ByteBuffer.allocate(4) : bufstack.pop());
+		final ByteBuffer buf = bufstack.pop();
 		buf.putInt(0x0C0C0C0C); // META HEADER/FOOTER
 		buf.flip();
 		if (useRedoThread) {

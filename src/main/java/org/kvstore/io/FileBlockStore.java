@@ -253,7 +253,6 @@ public class FileBlockStore {
 				// Fallback to RAF
 			}
 			fileChannel.position(index * blockSize).write(buf);
-			bufstack.push(buf);
 			return true;
 		}
 		catch(Exception e) {
@@ -318,10 +317,15 @@ public class FileBlockStore {
 		public ByteBuffer buf() {
 			return buf;
 		}
+		/**
+		 * Save and release the buffer
+		 * @return successful operation?
+		 */
 		public boolean save() {
 			if (mmaped)
 				return true;
 			final boolean ret = storage.set(index, buf);
+			storage.release(buf);
 			buf = null;
 			return ret;
 		}
