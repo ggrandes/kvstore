@@ -17,9 +17,9 @@ package org.kvstore.test;
 import java.nio.ByteBuffer;
 
 import org.kvstore.io.FileBlockStore;
+import org.kvstore.io.FileBlockStore.WriteBuffer;
 import org.kvstore.io.FileStreamStore;
 import org.kvstore.io.StringSerializer;
-import org.kvstore.pool.BufferStacker;
 
 /**
  * Code for benchmark
@@ -144,20 +144,20 @@ public class BenchMarkDiskStore {
 	public static void doTest_FileBlockStore_Bench_WriteRead() throws Exception {
 		final int BLOCK_SIZE = 512;
 		final FileBlockStore fbs = new FileBlockStore(TEST_BLOCK_FILE, BLOCK_SIZE, false);
-		final BufferStacker buffers = BufferStacker.getInstance(BLOCK_SIZE, false);
 		long ts, ts2;
 		//
 		fbs.delete();
+		//fbs.enableMmap(); // Test MMAPED?
 		fbs.open();
 		// puts
 		ts = System.currentTimeMillis(); ts2 = ts;
 		for (int i = 0; i < (TOTAL/2); i++) {
-			final ByteBuffer buf = buffers.pop();
+			final WriteBuffer wbuf = fbs.set(i);
+			final ByteBuffer buf = wbuf.buf();
 			newData().serialize(buf);
 			newData().serialize(buf);
 			buf.flip();
-			fbs.set(i, buf);
-			buffers.push(buf);
+			wbuf.save();
 			if (((i+1) % TRACE_LEN) == 0) {
 				System.out.println("block["+i+"]" + "\t" + (System.currentTimeMillis() - ts2) + "ms\t" + (TRACE_LEN / Math.max((System.currentTimeMillis() - ts2), 1)) + "k/s");
                 ts2 = System.currentTimeMillis();
