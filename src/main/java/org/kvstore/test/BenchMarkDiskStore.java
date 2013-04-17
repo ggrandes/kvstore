@@ -110,14 +110,14 @@ public class BenchMarkDiskStore {
 			offset[i] = fss.write(buf);
 			if (((i+1) % TRACE_LEN) == 0) {
 				System.out.println("offset["+i+"]="+offset[i]+ "\t" + (System.currentTimeMillis() - ts2) + "ms\t" + (TRACE_LEN / Math.max((System.currentTimeMillis() - ts2), 1)) + "k/s");
-                ts2 = System.currentTimeMillis();
+				ts2 = System.currentTimeMillis();
 			}
 		}
 		System.out.println("registry length=" + buf.limit());
 		//
 		fss.sync();
-        System.out.println("WRITE: " + (System.currentTimeMillis() - ts) + "\t" + (TOTAL / Math.max((System.currentTimeMillis() - ts), 1)) + "k/s");
-        //
+		System.out.println("WRITE: " + (System.currentTimeMillis() - ts) + "\t" + (TOTAL / Math.max((System.currentTimeMillis() - ts), 1)) + "k/s");
+		//
 		// gets
 		final BenchMarkDiskStore bag = new BenchMarkDiskStore();
 		ts = System.currentTimeMillis(); ts2 = ts;
@@ -133,10 +133,10 @@ public class BenchMarkDiskStore {
 			bag.deserialize(buf);
 			if (((j+1) % TRACE_LEN) == 0) {
 				System.out.println("offset=["+i+"] newOffset=["+newOffset+"]"+ "\t" + (System.currentTimeMillis() - ts2) + "ms\t" + (TRACE_LEN / Math.max((System.currentTimeMillis() - ts2), 1)) + "k/s");
-                ts2 = System.currentTimeMillis();
+				ts2 = System.currentTimeMillis();
 			}
 		}
-        System.out.println("READ: " + (System.currentTimeMillis() - ts) + "\t" + (TOTAL / Math.max((System.currentTimeMillis() - ts), 1)) + "k/s");
+		System.out.println("READ: " + (System.currentTimeMillis() - ts) + "\t" + (TOTAL / Math.max((System.currentTimeMillis() - ts), 1)) + "k/s");
 		//
 		fss.close();
 		fss.delete();
@@ -160,13 +160,13 @@ public class BenchMarkDiskStore {
 			wbuf.save();
 			if (((i+1) % TRACE_LEN) == 0) {
 				System.out.println("block["+i+"]" + "\t" + (System.currentTimeMillis() - ts2) + "ms\t" + (TRACE_LEN / Math.max((System.currentTimeMillis() - ts2), 1)) + "k/s");
-                ts2 = System.currentTimeMillis();
+				ts2 = System.currentTimeMillis();
 			}
 		}
 		//
 		fbs.sync();
-        System.out.println("WRITE: " + (System.currentTimeMillis() - ts) + "\t" + (TOTAL / Math.max((System.currentTimeMillis() - ts), 1)) + "k/s");
-        //
+		System.out.println("WRITE: " + (System.currentTimeMillis() - ts) + "\t" + (TOTAL / Math.max((System.currentTimeMillis() - ts), 1)) + "k/s");
+		//
 		// gets
 		final BenchMarkDiskStore bag = new BenchMarkDiskStore();
 		ts = System.currentTimeMillis(); ts2 = ts;
@@ -180,10 +180,10 @@ public class BenchMarkDiskStore {
 			bag.deserialize(buf);
 			if (((j+1) % TRACE_LEN) == 0) {
 				System.out.println("block=["+j+"]"+ "\t" + (System.currentTimeMillis() - ts2) + "ms\t" + (TRACE_LEN / Math.max((System.currentTimeMillis() - ts2), 1)) + "k/s");
-                ts2 = System.currentTimeMillis();
+				ts2 = System.currentTimeMillis();
 			}
 		}
-        System.out.println("READ: " + (System.currentTimeMillis() - ts) + "\t" + (TOTAL / Math.max((System.currentTimeMillis() - ts), 1)) + "k/s");
+		System.out.println("READ: " + (System.currentTimeMillis() - ts) + "\t" + (TOTAL / Math.max((System.currentTimeMillis() - ts), 1)) + "k/s");
 		//
 		fbs.close();
 		fbs.delete();
