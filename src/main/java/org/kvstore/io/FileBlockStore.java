@@ -233,7 +233,7 @@ public class FileBlockStore {
 	/**
 	 * Write from buf to file
 	 * @param index of block
-	 * @param buf ByteBuffer to write (this will be send to pool after write)
+	 * @param buf ByteBuffer to write
 	 * @return true if write is OK
 	 */
 	public boolean set(final int index, final ByteBuffer buf) {
