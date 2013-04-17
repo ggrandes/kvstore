@@ -163,9 +163,14 @@ Add the KVStore dependency to your pom.xml:
     <th>Reads/s</th>
   </tr>
   <tr>
-    <th>BlockStore</th>
+    <th>BlockStore (RAF)</th>
     <td>46k</td>
     <td>58k</td>
+  </tr>
+  <tr>
+    <th>BlockStore (MMAP)</th>
+    <td>67k</td>
+    <td>182k</td>
   </tr>
   <tr>
     <th>StreamStore</th>
