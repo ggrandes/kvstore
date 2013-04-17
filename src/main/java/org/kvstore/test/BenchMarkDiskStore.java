@@ -157,6 +157,7 @@ public class BenchMarkDiskStore {
 			newData().serialize(buf);
 			buf.flip();
 			fbs.set(i, buf);
+			buffers.push(buf);
 			if (((i+1) % TRACE_LEN) == 0) {
 				System.out.println("block["+i+"]" + "\t" + (System.currentTimeMillis() - ts2) + "ms\t" + (TRACE_LEN / Math.max((System.currentTimeMillis() - ts2), 1)) + "k/s");
                 ts2 = System.currentTimeMillis();
