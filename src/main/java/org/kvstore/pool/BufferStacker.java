@@ -19,7 +19,7 @@ import org.kvstore.structures.hash.IntHashMap;
 
 /**
  * Pool of ByteBuffers
- * This class is NOT Thread-Safe
+ * This class is Thread-Safe
  * 
  * <a href="http://www.evanjones.ca/software/java-bytebuffers.html">Efficient Java I/O: ByteBuffer</a>
  *
@@ -56,10 +56,10 @@ public class BufferStacker {
 		return (((bufferLen & 0x3FFFFFFF) << 1) | (isDirect ? 1 : 0));
 	}
 	//
-	public void push(final ByteBuffer buf) {
+	public synchronized void push(final ByteBuffer buf) {
 		stack.addFirst(buf);
 	}
-	public ByteBuffer pop() {
+	public synchronized ByteBuffer pop() {
 		final ByteBuffer buf = stack.pollFirst();
 		if (buf == null) {
 			created++;
