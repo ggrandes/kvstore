@@ -21,6 +21,7 @@ import java.lang.ref.SoftReference;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.util.Arrays;
 import java.util.Comparator;
 
@@ -58,6 +59,10 @@ public class FileBlockStore {
 	 */
 	private boolean useMmap = false;
 	/**
+	 * Support for Locking
+	 */
+	private boolean useLock = false;
+	/**
 	 * ByteBuffer pool
 	 */
 	private final BufferStacker bufstack;
@@ -69,6 +74,10 @@ public class FileBlockStore {
 	 * Callback called when flush buffers to disk
 	 */
 	private CallbackSync callback = null;
+	/**
+	 * File Lock
+	 */
+	private FileLock lock = null;
 
 	/**
 	 * Instantiate FileBlockStore
@@ -95,21 +104,32 @@ public class FileBlockStore {
 	// ========= Open / Close =========
 
 	/**
-	 * Open file
+	 * Open file for read/write
 	 * @return true if valid state
 	 */
 	public boolean open() {
+		return open(false);
+	}
+	/**
+	 * Open file
+	 * @param readOnly open for readOnly?
+	 * @return true if valid state
+	 */
+	public boolean open(final boolean readOnly) {
 		if (isOpen()) {
 			close();
 		}
 		if (log.isDebugEnabled())
 			log.debug("open("+file+")");
 		try {
-			raf = new RandomAccessFile(file, "rw");
+			raf = new RandomAccessFile(file, readOnly ? "r" : "rw");
 			fileChannel = raf.getChannel();
+			if (useLock)
+				lock(readOnly);
 		}
 		catch(Exception e) {
 			log.error("Exception in open()", e);
+			try { unlock(); } catch(Exception ign) {}
 			try { fileChannel.close(); } catch(Exception ign) {}
 			try { raf.close(); } catch(Exception ign) {}
 			raf = null;
@@ -124,6 +144,7 @@ public class FileBlockStore {
 	 */
 	public void close() {
 		mmaps.clear(false);
+		try { unlock(); } catch(Exception ign) {}
 		try { fileChannel.close(); } catch(Exception ign) {}
 		try { raf.close(); } catch(Exception ign) {}
 		fileChannel = null;
@@ -131,6 +152,33 @@ public class FileBlockStore {
 		validState = false;
 	}
 
+	// ========= Locking ======
+
+	/**
+	 * Lock file
+	 * @throws IOException 
+	 */
+	public boolean lock(final boolean readOnly) throws IOException {
+		if (isOpen() && lock == null) {
+			lock = fileChannel.lock(0L, Long.MAX_VALUE, readOnly);
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Unlock file
+	 * @throws IOException 
+	 */
+	public boolean unlock() throws IOException {
+		if (lock != null) {
+			lock.release();
+			lock = null;
+			return true;
+		}
+		return false;
+	}
+	
 	// ========= Info =========
 
 	/**
@@ -388,6 +436,14 @@ public class FileBlockStore {
 		} else {
 			log.info("Disabled mmap on 32bits JVM");
 		}
+	}
+	/**
+	 * Enable Lock of files (default is not enabled), call before use {@link #open()}
+	 */
+	public void enableLocking() {
+		if (validState) throw new InvalidStateException();
+		useLock = true;
+		log.info("Enabled Locking");
 	}
 
 	private final int addressIndexToSegment(final int index) {

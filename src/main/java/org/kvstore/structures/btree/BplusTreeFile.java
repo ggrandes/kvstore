@@ -235,6 +235,8 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 
 	@Override
 	protected void freeNode(final Node<K, V> node) {
+		if (readOnly)
+			throw new InvalidStateException();
 		final int nodeid = node.id;
 		if (nodeid == Node.NULL_ID) {
 			log.error(this.getClass().getName() + "::freeNode(" + nodeid + ") ERROR");
@@ -277,6 +279,9 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 
 	@Override
 	protected void putNode(final Node<K, V> node) {
+		if (readOnly)
+			throw new InvalidStateException();
+		
 		if (disableAllCaches) {
 			putNodeToStore(node);
 			return;
@@ -382,9 +387,11 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	/**
 	 * Write metadata to file 
 	 * @param isClean mark file with clean/true or unclean/false
-	 * @return boolean if write is ok
+	 * @return boolean if operation is ok
 	 */
 	private boolean writeMetaData(final boolean isClean) {
+		if (readOnly)
+			return true;
 		final WriteBuffer wbuf = storage.set(0);
 		final ByteBuffer buf = wbuf.buf();
 		boolean isOK = false;
@@ -479,14 +486,15 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	}
 
 	/**
-	 * Recovery
+	 * Recovery (readOnly can't be enabled)
 	 * @param forceFullRecovery to force full recovery and disallow incremental recovery
 	 * @return boolean if all right
 	 * @throws IllegalAccessException
 	 * @throws InstantiationException
+	 * @throws InvalidStateException
 	 */
 	public synchronized boolean recovery(final boolean forceFullRecovery) {
-		if (storage.isOpen() || redoStore.isOpen()) {
+		if (storage.isOpen() || redoStore.isOpen() || readOnly) {
 			throw new InvalidStateException();
 		}
 		if (!storage.open() || !redoStore.open()) {
@@ -632,8 +640,8 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		if (storage.isOpen() || redoStore.isOpen()) {
 			throw new InvalidStateException();
 		}
-		storage.open();
-		redoStore.open();
+		storage.open(readOnly);
+		redoStore.open(readOnly);
 		try {
 			if ((storage.sizeInBlocks() == 0) && (redoStore.isEmpty())) {
 				clearStates();
@@ -766,6 +774,13 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	public synchronized void enableMmapIfSupported() {
 		if (validState) throw new InvalidStateException();
 		storage.enableMmapIfSupported();
+	}
+	/**
+	 * Enable Locking of files (default is not enabled), call before use {@link #open()}
+	 */
+	public synchronized void enableLocking() {
+		if (validState) throw new InvalidStateException();
+		storage.enableLocking();
 	}
 
 	private void createRedoThread() {
@@ -1166,6 +1181,8 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	 */
 	@SuppressWarnings("unchecked")
 	private void privateSync(final boolean syncInternal, final boolean forceSyncStore) {
+		if (readOnly)
+			return;
 		final long ts = System.currentTimeMillis();
 		boolean isDirty = false;
 		if (!dirtyLeafNodes.isEmpty() || !dirtyInternalNodes.isEmpty()) {

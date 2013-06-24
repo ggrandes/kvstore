@@ -124,20 +124,32 @@ public final class FileStreamStore {
 	// ========= Open / Close =========
 
 	/**
-	 * Open file
+	 * Open file for read/write
 	 * @return true if valid state
 	 */
-	public synchronized boolean open() {
+	public boolean open() {
+		return open(false);
+	}
+	/**
+	 * Open file
+	 * @param readOnly open in readOnly mode?
+	 * @return true if valid state
+	 */
+	public synchronized boolean open(final boolean readOnly) {
 		if (isOpen()) {
 			close();
 		}
 		if (log.isDebugEnabled())
-			log.debug("open("+file+")");
+			log.debug("open("+file+", " + (readOnly ? "r" : "rw") +")");
 		try {
-			osOutput = new FileOutputStream(file, true);
-			fcOutput = osOutput.getChannel();
+			if (!readOnly) {
+				osOutput = new FileOutputStream(file, true);
+				fcOutput = osOutput.getChannel();
+			}
 			rafInput = new RandomAccessFile(file, "r");
 			fcInput = rafInput.getChannel();
+			if (readOnly)
+				fcOutput = fcInput;
 			offsetOutputUncommited = offsetOutputCommited = fcOutput.size();
 		}
 		catch(Exception e) {

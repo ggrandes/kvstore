@@ -74,15 +74,23 @@ public class FileLongStore {
 	// ========= Open / Close =========
 
 	/**
-	 * Open file
+	 * Open file for read/write
 	 * @return true if valid state
 	 */
-	public synchronized boolean open() {
+	public boolean open() {
+		return open(false);
+	}
+	/**
+	 * Open file
+	 * @param readOnly open in readOnly mode?
+	 * @return true if valid state
+	 */
+	public synchronized boolean open(final boolean readOnly) {
 		if (isOpen()) {
 			close();
 		}
 		try {
-			raf = new RandomAccessFile(file, "rw");
+			raf = new RandomAccessFile(file, readOnly ? "r" : "rw");
 			fc = raf.getChannel();
 		}
 		catch(Exception e) {

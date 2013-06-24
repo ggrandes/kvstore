@@ -67,6 +67,10 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 	 * Tree is in valid state?
 	 */
 	protected boolean validState = false;
+	/**
+	 * Read Only Mode
+	 */
+	protected boolean readOnly = false;
 
 	/**
 	 * META-DATA: nodeId of the root node
@@ -184,9 +188,19 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 	abstract protected boolean clearStorage();
 
 	/**
+	 * Mark Storage as Read Only if not already opened
+	 */
+	public synchronized void setReadOnly() {
+		if (validState) throw new InvalidStateException();
+		readOnly = true;
+	}
+
+	/**
 	 * Clear the tree
 	 */
 	public synchronized void clear() {
+		if (readOnly)
+			return;
 		if (clearStorage())
 			clearStates();
 	}
@@ -667,6 +681,8 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 	 * @return true if key was removed, false if not
 	 */
 	public synchronized boolean remove(final K key) {
+		if (readOnly)
+			return false;
 		if (!validState) throw new InvalidStateException();
 		if (key == null) return false;
 		try {
@@ -790,6 +806,8 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 	 * @return true if operation is ok, else false
 	 */
 	public synchronized boolean put(final K key, final V value) {
+		if (readOnly)
+			return false;
 		if (!validState) throw new InvalidStateException();
 		if (key == null) return false;
 		if (value == null) return false;

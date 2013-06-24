@@ -32,6 +32,8 @@ public class KVStoreFactory<K extends DataHolder<K>, V extends DataHolder<V>> {
 	public static final String DISABLE_AUTOSYNC_STORE = "opt.kvstore.persistence.boolean.disableautosyncstore"; // Boolean
 	public static final String ENABLE_MMAP = "opt.kvstore.persistence.boolean.enablemmap"; // Boolean
 	public static final String ENABLE_MMAP_IF_SUPPORTED = "opt.kvstore.persistence.boolean.enablemmapifsupported"; // Boolean
+	public static final String READONLY = "opt.kvstore.persistence.boolean.readonly"; // Boolean
+	public static final String ENABLE_LOCKING = "opt.kvstore.persistence.boolean.enablelocking"; // Boolean
 
 	public static final String B_SIZE = "opt.kvstore.btree.int.bsize"; // int
 	//
@@ -66,22 +68,19 @@ public class KVStoreFactory<K extends DataHolder<K>, V extends DataHolder<V>> {
 		final boolean autoTune = opts.getBoolean(AUTO_TUNE, true);
 		final BplusTreeFile<K, V> tree = new BplusTreeFile<K, V>(autoTune, b_size, typeK, typeV, fileName);
 		//
-		final int cache_size = opts.getInt(CACHE_SIZE, 8 * 1024 * 1024);
-		tree.setMaxCacheSizeInBytes(cache_size);
-		final boolean useRedo = opts.getBoolean(USE_REDO, true);
-		tree.setUseRedo(useRedo);
-		final boolean useRedoThread = opts.getBoolean(USE_REDO_THREAD, false);
-		tree.setUseRedoThread(useRedoThread);
-		final boolean disablePopulateCache = opts.getBoolean(DISABLE_POPULATE_CACHE, false);
-		tree.setDisablePopulateCache(disablePopulateCache);
-		final boolean disableAutoSyncStore = opts.getBoolean(DISABLE_AUTOSYNC_STORE, false);
-		tree.setDisableAutoSyncStore(disableAutoSyncStore);
-		final boolean enableMmap = opts.getBoolean(ENABLE_MMAP, false);
-		if (enableMmap)
+		tree.setMaxCacheSizeInBytes(opts.getInt(CACHE_SIZE, 8 * 1024 * 1024));
+		tree.setUseRedo(opts.getBoolean(USE_REDO, true));
+		tree.setUseRedoThread(opts.getBoolean(USE_REDO_THREAD, false));
+		tree.setDisablePopulateCache(opts.getBoolean(DISABLE_POPULATE_CACHE, false));
+		tree.setDisableAutoSyncStore(opts.getBoolean(DISABLE_AUTOSYNC_STORE, false));
+		if (opts.getBoolean(ENABLE_MMAP, false))
 			tree.enableMmap();
-		final boolean enableMmapIfSupported = opts.getBoolean(ENABLE_MMAP_IF_SUPPORTED, false);
-		if (enableMmapIfSupported)
+		if (opts.getBoolean(ENABLE_MMAP_IF_SUPPORTED, false))
 			tree.enableMmapIfSupported();
+		if (opts.getBoolean(READONLY, false))
+			tree.setReadOnly();
+		if (opts.getBoolean(ENABLE_LOCKING, false))
+			tree.enableLocking();
 		//
 		return tree;
 	}
@@ -93,6 +92,7 @@ public class KVStoreFactory<K extends DataHolder<K>, V extends DataHolder<V>> {
 		.set(B_SIZE, 512)
 		.set(USE_REDO, true)
 		.set(USE_REDO_THREAD, false)
+		.set(ENABLE_LOCKING, true)
 		.set(CACHE_SIZE, 8*1024*1024);
 		return opts;
 	}
@@ -103,6 +103,7 @@ public class KVStoreFactory<K extends DataHolder<K>, V extends DataHolder<V>> {
 		.set(B_SIZE, 512)
 		.set(USE_REDO, true)
 		.set(USE_REDO_THREAD, false)
+		.set(ENABLE_LOCKING, true)
 		.set(CACHE_SIZE, 1*1024*1024);
 		return opts;
 	}
