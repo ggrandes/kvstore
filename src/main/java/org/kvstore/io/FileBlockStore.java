@@ -442,8 +442,13 @@ public class FileBlockStore {
 	 */
 	public void enableLocking() {
 		if (validState) throw new InvalidStateException();
-		useLock = true;
-		log.info("Enabled Locking");
+		if (Boolean.getBoolean(Constants.PROP_IO_LOCKING)) {
+			useLock = false;
+			log.info("Disabled Locking in System Property (" + Constants.PROP_IO_LOCKING + ")");
+		} else {
+			useLock = true;
+			log.info("Enabled Locking");
+		}
 	}
 
 	private final int addressIndexToSegment(final int index) {
