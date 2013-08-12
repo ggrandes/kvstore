@@ -270,7 +270,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		final ByteBuffer buf = storage.get(index);
 		final Node<K, V> node = Node.deserialize(buf, this);
 		if (rootIdx == node.id) {
-			log.warn(this.getClass().getName() + "::getNodeFromStore(" + nodeid + ") WARN ROOT NODE READED");
+			log.warn(this.getClass().getName() + "::getNodeFromStore(" + nodeid + ") WARN LOADED ROOT NODE");
 		}
 		storage.release(buf);
 		if (enableIOStats) getIOStat(nodeid).incPhysRead();
