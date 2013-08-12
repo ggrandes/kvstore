@@ -353,7 +353,7 @@ public final class FileStreamStore {
 				if (alignBlocks && (magicB1 == MAGIC_PADDING)) {
 					final int diffOffset = nextBlockBoundary(offset);
 					if (diffOffset > 0) {
-						//						log.info("WARN: skipping " + diffOffset + "bytes to next block-boundary");
+						//log.info("WARN: skipping " + diffOffset + "bytes to next block-boundary");
 						offset += diffOffset;
 						continue;
 					}
@@ -367,16 +367,33 @@ public final class FileStreamStore {
 			}
 			//
 			final int datalen = bufInput.getInt(); 	// Header - Data Size (int, 4 bytes)
-			final int footer = bufInput.get(datalen+HEADER_LEN); 	// Footer (byte)
-			if (footer != MAGIC_FOOT) {
-				log.error("MAGIC FOOT fake=" + Integer.toHexString(footer) + " expected=" + Integer.toHexString(MAGIC_FOOT));
-				return -1;
+			final int dataUnderFlow = (datalen - (readed-HEADER_LEN));
+			int footer = -12345678;
+			if (dataUnderFlow < 0) {
+				footer = bufInput.get(datalen+HEADER_LEN); 	// Footer (byte)
 			}
 			bufInput.limit(Math.min(readed, datalen+HEADER_LEN));
 			buf.put(bufInput);
-			if (datalen > (readed-HEADER_LEN)) {
+			if (dataUnderFlow > 0) {
 				buf.limit(datalen);
-				readed = fcInput.read(buf);
+				int len = fcInput.read(buf);
+				if (len < dataUnderFlow) {
+					log.error("Unable to read payload readed=" + len + " expected=" + dataUnderFlow);
+					return -1;
+				}
+			}
+			if (dataUnderFlow >= 0) {
+				// Read Footer (byte)
+				bufInput.clear();
+				bufInput.limit(FOOTER_LEN);
+				if (fcInput.read(bufInput) < FOOTER_LEN)
+					return -1;
+				bufInput.flip();
+				footer = bufInput.get();
+			}
+			if (footer != MAGIC_FOOT) {
+				log.error("MAGIC FOOT fake=" + Integer.toHexString(footer) + " expected=" + Integer.toHexString(MAGIC_FOOT));
+				return -1;
 			}
 			buf.flip();
 			return (offset+HEADER_LEN+datalen+FOOTER_LEN);
