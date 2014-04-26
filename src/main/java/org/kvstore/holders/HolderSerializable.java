@@ -13,11 +13,12 @@
  *
  */
 package org.kvstore.holders;
+
 import java.nio.ByteBuffer;
 
 /**
  * Interface for Serializable Holders
- *
+ * 
  * @author Guillermo Grandes / guillermo.grandes[at]gmail.com
  */
 public interface HolderSerializable<T> {
@@ -25,7 +26,9 @@ public interface HolderSerializable<T> {
 	// ========= Serialization =========
 
 	public int byteLength();
-	public void serialize(ByteBuffer buf);
-	public T deserialize(ByteBuffer buf);
+
+	public void serialize(final ByteBuffer buf);
+
+	public T deserialize(final ByteBuffer buf);
 
 }

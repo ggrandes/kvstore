@@ -13,20 +13,21 @@
  *
  */
 package org.kvstore.holders;
+
 import java.nio.ByteBuffer;
 import org.kvstore.io.StringSerializer;
 import org.kvstore.pool.StringPool;
 
 /**
- * Holder for String values
- * <br/><b>WARNING:</b> Dont use this with BplusTreeFile (file need fixed/constant length objects, like Long or Int)
- *
+ * Holder for String values <br/>
+ * <b>WARNING:</b> Dont use this with BplusTreeFile (file need fixed/constant length objects, like Long or
+ * Int)
+ * 
  * @author Guillermo Grandes / guillermo.grandes[at]gmail.com
  */
 public final class StringHolder extends DataHolder<StringHolder> {
-	//
 	private final String value;
-	//	
+
 	public static StringHolder valueOf(final String value) {
 		return new StringHolder(StringPool.getCanonicalVersion(value));
 	}
@@ -34,7 +35,9 @@ public final class StringHolder extends DataHolder<StringHolder> {
 	/**
 	 * Constructor necesario para la deserializacion
 	 */
-	public StringHolder() { this(""); };
+	public StringHolder() {
+		this("");
+	};
 
 	private StringHolder(final String value) {
 		this.value = value;
@@ -46,23 +49,27 @@ public final class StringHolder extends DataHolder<StringHolder> {
 
 	// ========= Basic Object methods =========
 
+	@Override
 	public String toString() {
 		return value;
 	}
 
+	@Override
 	public int hashCode() {
 		return value.hashCode();
 	}
 
 	// ========= Comparable =========
 
+	@Override
 	public boolean equals(final Object obj) {
 		if (obj instanceof StringHolder) {
-			return value.equals(((StringHolder)obj).value);
+			return value.equals(((StringHolder) obj).value);
 		}
 		return false;
 	}
 
+	@Override
 	public int compareTo(final StringHolder anotherString) {
 		final String thisVal = this.value;
 		final String anotherVal = anotherString.value;
@@ -71,15 +78,18 @@ public final class StringHolder extends DataHolder<StringHolder> {
 
 	// ========= Serialization =========
 
+	@Override
 	public final int byteLength() {
 		throw new UnsupportedOperationException("StringHolder is variable length Object");
 	}
 
-	public void serialize(ByteBuffer buf) {
+	@Override
+	public void serialize(final ByteBuffer buf) {
 		StringSerializer.fromStringToBuffer(buf, value);
 	}
 
-	public StringHolder deserialize(ByteBuffer buf) {
+	@Override
+	public StringHolder deserialize(final ByteBuffer buf) {
 		return valueOf(StringSerializer.fromBufferToString(buf));
 	}
 

@@ -13,24 +13,26 @@
  *
  */
 package org.kvstore.holders;
+
 import java.nio.ByteBuffer;
 
 import org.kvstore.structures.hash.FixedIntHashMap;
 
 /**
  * Holder for Int values
- *
+ * 
  * @author Guillermo Grandes / guillermo.grandes[at]gmail.com
  */
 public final class IntHolder extends DataHolder<IntHolder> {
-	//
-	private static final FixedIntHashMap<IntHolder> cache = new FixedIntHashMap<IntHolder>(4096, IntHolder.class);
-	//
+	private static final FixedIntHashMap<IntHolder> cache = new FixedIntHashMap<IntHolder>(4096,
+			IntHolder.class);
+
 	private final int value;
-	//
+
 	public static IntHolder valueOf(final long value) {
-		return valueOf((int)value);
+		return valueOf((int) value);
 	}
+
 	public static IntHolder valueOf(final int value) {
 		final IntHolder cachedKey = cache.get(value);
 		if (cachedKey != null) {
@@ -46,7 +48,9 @@ public final class IntHolder extends DataHolder<IntHolder> {
 	/**
 	 * Constructor necesario para la deserializacion
 	 */
-	public IntHolder() { this(0); };
+	public IntHolder() {
+		this(0);
+	};
 
 	private IntHolder(final int value) {
 		this.value = value;
@@ -58,41 +62,48 @@ public final class IntHolder extends DataHolder<IntHolder> {
 
 	// ========= Basic Object methods =========
 
+	@Override
 	public String toString() {
 		return String.valueOf(value);
 	}
 
+	@Override
 	public int hashCode() {
 		return value;
 	}
 
 	// ========= Comparable =========
 
+	@Override
 	public boolean equals(final Object obj) {
 		if (obj instanceof IntHolder) {
-			return value == ((IntHolder)obj).intValue();
+			return value == ((IntHolder) obj).intValue();
 		}
 		return false;
 	}
 
+	@Override
 	public int compareTo(final IntHolder anotherInt) {
 		final int thisVal = this.value;
 		final int anotherVal = anotherInt.value;
-		return ((thisVal<anotherVal) ? -1 : ((thisVal==anotherVal) ? 0 : 1));
+		return ((thisVal < anotherVal) ? -1 : ((thisVal == anotherVal) ? 0 : 1));
 	}
 
 	// ========= Serialization =========
 
+	@Override
 	public final int byteLength() {
 		return 4;
 	}
 
-	public void serialize(ByteBuffer buf) {
+	@Override
+	public void serialize(final ByteBuffer buf) {
 		buf.putInt(value);
 	}
-	public IntHolder deserialize(ByteBuffer buf) {
+
+	@Override
+	public IntHolder deserialize(final ByteBuffer buf) {
 		return valueOf(buf.getInt());
 	}
 
 }
-

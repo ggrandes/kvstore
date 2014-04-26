@@ -13,23 +13,24 @@
  *
  */
 package org.kvstore.holders;
+
 import java.nio.ByteBuffer;
 
 import org.kvstore.structures.hash.FixedIntHashMap;
 
 /**
  * Holder for Long values
- *
+ * 
  * @author Guillermo Grandes / guillermo.grandes[at]gmail.com
  */
 public final class LongHolder extends DataHolder<LongHolder> {
-	//
-	private static final FixedIntHashMap<LongHolder> cache = new FixedIntHashMap<LongHolder>(8192, LongHolder.class);
-	//
+	private static final FixedIntHashMap<LongHolder> cache = new FixedIntHashMap<LongHolder>(8192,
+			LongHolder.class);
+
 	private final long value;
-	//	
+
 	public static LongHolder valueOf(final long value) {
-		final int hash = (int)(value ^ (value >>> 32));
+		final int hash = (int) (value ^ (value >>> 32));
 		final LongHolder cachedValue = cache.get(hash);
 		if (cachedValue != null) {
 			if (cachedValue.value == value) {
@@ -44,54 +45,62 @@ public final class LongHolder extends DataHolder<LongHolder> {
 	/**
 	 * Constructor necesario para la deserializacion
 	 */
-	public LongHolder() { this(0); };
+	public LongHolder() {
+		this(0);
+	};
 
 	private LongHolder(final long value) {
 		this.value = value;
 	}
 
 	public long longValue() {
-		return (long)value;
+		return (long) value;
 	}
 
 	// ========= Basic Object methods =========
 
+	@Override
 	public String toString() {
 		return String.valueOf(value);
 	}
 
+	@Override
 	public int hashCode() {
-		return (int)(value ^ (value >>> 32));
+		return (int) (value ^ (value >>> 32));
 	}
 
 	// ========= Comparable =========
 
+	@Override
 	public boolean equals(final Object obj) {
 		if (obj instanceof LongHolder) {
-			return value == ((LongHolder)obj).longValue();
+			return value == ((LongHolder) obj).longValue();
 		}
 		return false;
 	}
 
+	@Override
 	public int compareTo(final LongHolder anotherLong) {
 		final long thisVal = this.value;
 		final long anotherVal = anotherLong.value;
-		return ((thisVal<anotherVal) ? -1 : ((thisVal==anotherVal) ? 0 : 1));
+		return ((thisVal < anotherVal) ? -1 : ((thisVal == anotherVal) ? 0 : 1));
 	}
 
 	// ========= Serialization =========
 
+	@Override
 	public final int byteLength() {
 		return 8;
 	}
 
-	public void serialize(ByteBuffer buf) {
+	@Override
+	public void serialize(final ByteBuffer buf) {
 		buf.putLong(value);
 	}
 
-	public LongHolder deserialize(ByteBuffer buf) {
+	@Override
+	public LongHolder deserialize(final ByteBuffer buf) {
 		return valueOf(buf.getLong());
 	}
 
 }
-

@@ -13,6 +13,7 @@
  *
  */
 package org.kvstore.holders;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -20,12 +21,12 @@ import org.kvstore.structures.hash.FixedIntHashMap;
 
 /**
  * Example Holder for byte[8] values
- *
+ * 
  * @author Guillermo Grandes / guillermo.grandes[at]gmail.com
  */
 public final class ByteArray8Holder extends DataHolder<ByteArray8Holder> {
-	//
-	private static final FixedIntHashMap<ByteArray8Holder> cache = new FixedIntHashMap<ByteArray8Holder>(4096, ByteArray8Holder.class);
+	private static final FixedIntHashMap<ByteArray8Holder> cache = new FixedIntHashMap<ByteArray8Holder>(
+			4096, ByteArray8Holder.class);
 
 	private final byte[] value;
 
@@ -45,7 +46,9 @@ public final class ByteArray8Holder extends DataHolder<ByteArray8Holder> {
 	/**
 	 * Constructor necesario para la deserializacion
 	 */
-	public ByteArray8Holder() { this(null); };
+	public ByteArray8Holder() {
+		this(null);
+	};
 
 	private ByteArray8Holder(final byte[] value) {
 		this.value = value;
@@ -57,37 +60,40 @@ public final class ByteArray8Holder extends DataHolder<ByteArray8Holder> {
 
 	// ========= Basic Object methods =========
 
+	@Override
 	public String toString() {
 		return getHex(value); // Arrays.toString(value);
 	}
 
+	@Override
 	public int hashCode() {
-		return Arrays.hashCode(value); 
+		return Arrays.hashCode(value);
 	}
 
 	private static final String HEXES = "0123456789ABCDEF";
-	public static String getHex( byte [] raw ) {
-		if ( raw == null ) {
+
+	public static String getHex(final byte[] raw) {
+		if (raw == null) {
 			return null;
 		}
-		final StringBuilder hex = new StringBuilder( 2 * raw.length );
-		for ( final byte b : raw ) {
-			hex
-			.append(HEXES.charAt((b & 0xF0) >> 4))
-			.append(HEXES.charAt((b & 0x0F)));
+		final StringBuilder hex = new StringBuilder(2 * raw.length);
+		for (final byte b : raw) {
+			hex.append(HEXES.charAt((b & 0xF0) >> 4)).append(HEXES.charAt((b & 0x0F)));
 		}
 		return hex.toString();
 	}
 
 	// ========= Comparable =========
 
+	@Override
 	public boolean equals(final Object obj) {
 		if (obj instanceof ByteArray8Holder) {
-			return Arrays.equals(value, ((ByteArray8Holder)obj).getValue());
+			return Arrays.equals(value, ((ByteArray8Holder) obj).getValue());
 		}
 		return false;
 	}
 
+	@Override
 	public int compareTo(final ByteArray8Holder anotherLong) {
 		final byte[] thisVal = this.value;
 		final byte[] anotherVal = anotherLong.value;
@@ -105,28 +111,40 @@ public final class ByteArray8Holder extends DataHolder<ByteArray8Holder> {
 		return left.length - right.length;
 	}
 
-
 	// ========= Serialization =========
 
+	@Override
 	public final int byteLength() {
 		return 8;
 	}
 
-	public void serialize(ByteBuffer buf) {
+	@Override
+	public void serialize(final ByteBuffer buf) {
 		buf.put(value, 0, Math.min(byteLength(), value.length));
 	}
-	public ByteArray8Holder deserialize(ByteBuffer buf) {
+
+	@Override
+	public ByteArray8Holder deserialize(final ByteBuffer buf) {
 		final byte[] newvalue = new byte[byteLength()];
 		buf.get(newvalue, 0, newvalue.length);
 		return valueOf(newvalue);
 	}
 
-	// ========= 
+	// =========
 
-	public static void main(String[] args) {
-		ByteArray8Holder b1 = new ByteArray8Holder(new byte[] { 0,0, 0,0, 0,0, 0,1 });
-		ByteArray8Holder b2 = new ByteArray8Holder(new byte[] { 0,0, 0,0, 0,0, 0,2 });
-		ByteArray8Holder b2b = new ByteArray8Holder(new byte[] { 0,0, 0,0, 0,0, 0,2 });
+	/**
+	 * Simple Test
+	 */
+	public static void main(final String[] args) {
+		ByteArray8Holder b1 = new ByteArray8Holder(new byte[] {
+				0, 0, 0, 0, 0, 0, 0, 1
+		});
+		ByteArray8Holder b2 = new ByteArray8Holder(new byte[] {
+				0, 0, 0, 0, 0, 0, 0, 2
+		});
+		ByteArray8Holder b2b = new ByteArray8Holder(new byte[] {
+				0, 0, 0, 0, 0, 0, 0, 2
+		});
 		System.out.println("compareTo=" + Integer.valueOf(0).compareTo(Integer.valueOf(1)));
 		System.out.println("b1.compareTo(b2)=" + b1.compareTo(b2));
 		System.out.println("b1.equals(b2)=" + b1.equals(b2));
@@ -138,4 +156,3 @@ public final class ByteArray8Holder extends DataHolder<ByteArray8Holder> {
 	}
 
 }
-
