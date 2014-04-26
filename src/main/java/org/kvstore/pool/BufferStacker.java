@@ -13,6 +13,7 @@
  *
  */
 package org.kvstore.pool;
+
 import java.nio.ByteBuffer;
 
 import org.kvstore.structures.hash.IntHashMap;
@@ -22,7 +23,7 @@ import org.kvstore.structures.hash.IntHashMap;
  * This class is Thread-Safe
  * 
  * <a href="http://www.evanjones.ca/software/java-bytebuffers.html">Efficient Java I/O: ByteBuffer</a>
- *
+ * 
  * @author Guillermo Grandes / guillermo.grandes[at]gmail.com
  */
 public class BufferStacker {
@@ -32,17 +33,20 @@ public class BufferStacker {
 	private java.util.Deque<ByteBuffer> stack = new java.util.ArrayDeque<ByteBuffer>();
 	private final int bufferLen;
 	private int created = 0;
+
 	//
-	private BufferStacker() { 
+	private BufferStacker() {
 		this(1024);
 	}
+
 	private BufferStacker(final int bufferLen) {
 		this.bufferLen = bufferLen;
 	}
+
 	//
 	public static BufferStacker getInstance(final int bufferLen, final boolean isDirect) {
 		final int key = composeKey(bufferLen, isDirect);
-		synchronized(INSTANCES) {
+		synchronized (INSTANCES) {
 			BufferStacker bs = INSTANCES.get(key);
 			if (bs == null) {
 				bs = new BufferStacker(bufferLen);
@@ -51,14 +55,17 @@ public class BufferStacker {
 			return bs;
 		}
 	}
+
 	//
 	private static final int composeKey(final int bufferLen, final boolean isDirect) {
 		return (((bufferLen & 0x3FFFFFFF) << 1) | (isDirect ? 1 : 0));
 	}
+
 	//
 	public synchronized void push(final ByteBuffer buf) {
 		stack.addFirst(buf);
 	}
+
 	public synchronized ByteBuffer pop() {
 		final ByteBuffer buf = stack.pollFirst();
 		if (buf == null) {
@@ -68,6 +75,7 @@ public class BufferStacker {
 		buf.clear();
 		return buf;
 	}
+
 	public String toString() {
 		return super.toString() + ": created=" + created;
 	}
