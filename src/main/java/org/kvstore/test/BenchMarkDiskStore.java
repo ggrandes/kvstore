@@ -23,11 +23,11 @@ import org.kvstore.io.StringSerializer;
 
 /**
  * Code for benchmark
- *
+ * 
  * @author Guillermo Grandes / guillermo.grandes[at]gmail.com
  */
 public class BenchMarkDiskStore {
-	private static final int TOTAL = (int)1e6, TRACE_LEN = 100000;
+	private static final int TOTAL = (int) 1e6, TRACE_LEN = 100000;
 	private static final String TEST_STREAM_FILE = "/tmp/data/stream";
 	private static final String TEST_BLOCK_FILE = "/tmp/data/block";
 	//
@@ -40,11 +40,13 @@ public class BenchMarkDiskStore {
 	public String str2;
 	public String str3;
 	public String str4;
+
 	//
-	public BenchMarkDiskStore() {}
-	public BenchMarkDiskStore(final long long1, final long long2, final long long3, 
-			final int int1, final int int2, 
-			final String str1, final String str2, final String str3, final String str4) {
+	public BenchMarkDiskStore() {
+	}
+
+	public BenchMarkDiskStore(final long long1, final long long2, final long long3, final int int1,
+			final int int2, final String str1, final String str2, final String str3, final String str4) {
 		this.long1 = long1;
 		this.long2 = long2;
 		this.long3 = long3;
@@ -55,6 +57,7 @@ public class BenchMarkDiskStore {
 		this.str3 = str3;
 		this.str4 = str4;
 	}
+
 	// ByteBuffer
 	public void serialize(final ByteBuffer out) {
 		out.clear();
@@ -68,6 +71,7 @@ public class BenchMarkDiskStore {
 		StringSerializer.fromStringToBuffer(out, str3);
 		StringSerializer.fromStringToBuffer(out, str4);
 	}
+
 	public void deserialize(final ByteBuffer in) {
 		long1 = in.getLong();
 		long2 = in.getLong();
@@ -81,12 +85,14 @@ public class BenchMarkDiskStore {
 	}
 
 	private static int c = 0;
+
 	private final static BenchMarkDiskStore newData() {
 		final String s1 = "S1.123456789.", s2 = "S2.123456789.", s3 = "S3.123456789.123456789.";
 		final String s4 = "S4.123456789.123456789.123456789.123456789.123456789.123456789.123456789.123456789.123456789.123456789.123456789.123456789.123456789.123456789.123456789.123456";
 		c++;
-		return new BenchMarkDiskStore(c+1, c+2, c+3, c+11, c+12, s1, s2, s3, s4);
+		return new BenchMarkDiskStore(c + 1, c + 2, c + 3, c + 11, c + 12, s1, s2, s3, s4);
 	}
+
 	public static void doTest_FileStreamStore_Bench_WriteRead() throws Exception {
 		final int BUFFER_LEN = 0x10000;
 		final FileStreamStore fss = new FileStreamStore(TEST_STREAM_FILE, BUFFER_LEN);
@@ -102,88 +108,103 @@ public class BenchMarkDiskStore {
 		fss.setSyncOnFlush(false);
 		fss.setAlignBlocks(true);
 		// puts
-		ts = System.currentTimeMillis(); ts2 = ts;
+		ts = System.currentTimeMillis();
+		ts2 = ts;
 		for (int i = 0; i < TOTAL; i++) {
 			buf.clear();
 			newData().serialize(buf);
 			buf.flip();
 			offset[i] = fss.write(buf);
-			if (((i+1) % TRACE_LEN) == 0) {
-				System.out.println("offset["+i+"]="+offset[i]+ "\t" + (System.currentTimeMillis() - ts2) + "ms\t" + (TRACE_LEN / Math.max((System.currentTimeMillis() - ts2), 1)) + "k/s");
+			if (((i + 1) % TRACE_LEN) == 0) {
+				System.out.println("offset[" + i + "]=" + offset[i] + "\t"
+						+ (System.currentTimeMillis() - ts2) + "ms\t"
+						+ (TRACE_LEN / Math.max((System.currentTimeMillis() - ts2), 1)) + "k/s");
 				ts2 = System.currentTimeMillis();
 			}
 		}
 		System.out.println("registry length=" + buf.limit());
 		//
 		fss.sync();
-		System.out.println("WRITE: " + (System.currentTimeMillis() - ts) + "\t" + (TOTAL / Math.max((System.currentTimeMillis() - ts), 1)) + "k/s");
+		System.out.println("WRITE: " + (System.currentTimeMillis() - ts) + "\t"
+				+ (TOTAL / Math.max((System.currentTimeMillis() - ts), 1)) + "k/s");
 		//
 		// gets
 		final BenchMarkDiskStore bag = new BenchMarkDiskStore();
-		ts = System.currentTimeMillis(); ts2 = ts;
+		ts = System.currentTimeMillis();
+		ts2 = ts;
 		newOffset = 0;
 		for (int j = 0; j < offset.length; j++) {
 			final long i = newOffset;
 			buf.clear();
 			newOffset = fss.read(newOffset, buf);
-			if (newOffset < 0) { 
+			if (newOffset < 0) {
 				System.out.println("Error trying read offset " + i + " size=" + fss.size());
 				break;
 			}
 			bag.deserialize(buf);
-			if (((j+1) % TRACE_LEN) == 0) {
-				System.out.println("offset=["+i+"] newOffset=["+newOffset+"]"+ "\t" + (System.currentTimeMillis() - ts2) + "ms\t" + (TRACE_LEN / Math.max((System.currentTimeMillis() - ts2), 1)) + "k/s");
+			if (((j + 1) % TRACE_LEN) == 0) {
+				System.out.println("offset=[" + i + "] newOffset=[" + newOffset + "]" + "\t"
+						+ (System.currentTimeMillis() - ts2) + "ms\t"
+						+ (TRACE_LEN / Math.max((System.currentTimeMillis() - ts2), 1)) + "k/s");
 				ts2 = System.currentTimeMillis();
 			}
 		}
-		System.out.println("READ: " + (System.currentTimeMillis() - ts) + "\t" + (TOTAL / Math.max((System.currentTimeMillis() - ts), 1)) + "k/s");
+		System.out.println("READ: " + (System.currentTimeMillis() - ts) + "\t"
+				+ (TOTAL / Math.max((System.currentTimeMillis() - ts), 1)) + "k/s");
 		//
 		fss.close();
 		fss.delete();
 	}
+
 	public static void doTest_FileBlockStore_Bench_WriteRead() throws Exception {
 		final int BLOCK_SIZE = 512;
 		final FileBlockStore fbs = new FileBlockStore(TEST_BLOCK_FILE, BLOCK_SIZE, false);
 		long ts, ts2;
 		//
 		fbs.delete();
-		//fbs.enableMmap(); // Test MMAPED?
+		// fbs.enableMmap(); // Test MMAPED?
 		fbs.open();
 		// puts
-		ts = System.currentTimeMillis(); ts2 = ts;
-		for (int i = 0; i < (TOTAL/2); i++) {
+		ts = System.currentTimeMillis();
+		ts2 = ts;
+		for (int i = 0; i < (TOTAL / 2); i++) {
 			final WriteBuffer wbuf = fbs.set(i);
 			final ByteBuffer buf = wbuf.buf();
 			newData().serialize(buf);
 			newData().serialize(buf);
 			buf.flip();
 			wbuf.save();
-			if (((i+1) % TRACE_LEN) == 0) {
-				System.out.println("block["+i+"]" + "\t" + (System.currentTimeMillis() - ts2) + "ms\t" + (TRACE_LEN / Math.max((System.currentTimeMillis() - ts2), 1)) + "k/s");
+			if (((i + 1) % TRACE_LEN) == 0) {
+				System.out.println("block[" + i + "]" + "\t" + (System.currentTimeMillis() - ts2) + "ms\t"
+						+ (TRACE_LEN / Math.max((System.currentTimeMillis() - ts2), 1)) + "k/s");
 				ts2 = System.currentTimeMillis();
 			}
 		}
 		//
 		fbs.sync();
-		System.out.println("WRITE: " + (System.currentTimeMillis() - ts) + "\t" + (TOTAL / Math.max((System.currentTimeMillis() - ts), 1)) + "k/s");
+		System.out.println("WRITE: " + (System.currentTimeMillis() - ts) + "\t"
+				+ (TOTAL / Math.max((System.currentTimeMillis() - ts), 1)) + "k/s");
 		//
 		// gets
 		final BenchMarkDiskStore bag = new BenchMarkDiskStore();
-		ts = System.currentTimeMillis(); ts2 = ts;
+		ts = System.currentTimeMillis();
+		ts2 = ts;
 		for (int j = 0; j < TOTAL; j++) {
 			final ByteBuffer buf = fbs.get(j);
-			if (buf == null) { 
+			if (buf == null) {
 				System.out.println("Error trying read block " + j + " blocks=" + fbs.sizeInBlocks());
 				break;
 			}
 			bag.deserialize(buf);
 			bag.deserialize(buf);
-			if (((j+1) % TRACE_LEN) == 0) {
-				System.out.println("block=["+j+"]"+ "\t" + (System.currentTimeMillis() - ts2) + "ms\t" + (TRACE_LEN / Math.max((System.currentTimeMillis() - ts2), 1)) + "k/s");
+			if (((j + 1) % TRACE_LEN) == 0) {
+				System.out.println("block=[" + j + "]" + "\t" + (System.currentTimeMillis() - ts2) + "ms\t"
+						+ (TRACE_LEN / Math.max((System.currentTimeMillis() - ts2), 1)) + "k/s");
 				ts2 = System.currentTimeMillis();
 			}
 		}
-		System.out.println("READ: " + (System.currentTimeMillis() - ts) + "\t" + (TOTAL / Math.max((System.currentTimeMillis() - ts), 1)) + "k/s");
+		System.out.println("READ: " + (System.currentTimeMillis() - ts) + "\t"
+				+ (TOTAL / Math.max((System.currentTimeMillis() - ts), 1)) + "k/s");
 		//
 		fbs.close();
 		fbs.delete();
