@@ -4,7 +4,7 @@ KVStore is a Key-Value Store for Memory & Disk (for BplusTree on disk, keys and 
 
 API is similar to [TreeMap](http://docs.oracle.com/javase/6/docs/api/java/util/TreeMap.html).
 
-### Current Development Version is [0.0.16](https://maven-release.s3.amazonaws.com/release/org/kvstore/kvstore/0.0.16/kvstore-0.0.16.jar)
+### Current Development Version is [0.0.17](https://maven-release.s3.amazonaws.com/release/org/javastack/kvstore/0.0.17/kvstore-0.0.17.jar)
 
 ---
 
@@ -14,11 +14,11 @@ API is similar to [TreeMap](http://docs.oracle.com/javase/6/docs/api/java/util/T
 
 ```java
 import java.util.Iterator;
-import org.kvstore.KVStoreFactory;
-import org.kvstore.Options;
-import org.kvstore.holders.IntHolder;
-import org.kvstore.structures.btree.BplusTree.TreeEntry;
-import org.kvstore.structures.btree.BplusTreeFile;
+import org.javastack.kvstore.KVStoreFactory;
+import org.javastack.kvstore.Options;
+import org.javastack.kvstore.holders.IntHolder;
+import org.javastack.kvstore.structures.btree.BplusTree.TreeEntry;
+import org.javastack.kvstore.structures.btree.BplusTreeFile;
 
 public class Example {
 	private static final String btreeFile = "/tmp/test";
@@ -85,7 +85,7 @@ public class Example {
 	tree.lastKey()=111
 
 
-* More examples in [Test package](https://github.com/ggrandes/kvstore/tree/master/src/main/java/org/kvstore/test)
+* More examples in [Test package](https://github.com/ggrandes/kvstore/tree/master/src/main/java/org/javastack/kvstore/test)
 
 ---
 
@@ -103,9 +103,9 @@ Add the KVStore maven repository location to your pom.xml:
 Add the KVStore dependency to your pom.xml:
 
     <dependency>
-        <groupId>org.kvstore</groupId>
+        <groupId>org.javastack</groupId>
         <artifactId>kvstore</artifactId>
-        <version>0.0.16</version>
+        <version>0.0.17</version>
     </dependency>
 
 ---
@@ -181,7 +181,7 @@ Add the KVStore dependency to your pom.xml:
   </tr>
 </table>
 
-###### Test-1 (org.kvstore.test.BenchMarkDiskStore): Registry { count=1e6, datalen=256bytes } BlockStore { blockSize=512 (2reg/block), fileSize=250MB } StreamStore { outBufferSize=0x10000, align=true, fileSize=256MB } 
+###### Test-1 (org.javastack.kvstore.test.BenchMarkDiskStore): Registry { count=1e6, datalen=256bytes } BlockStore { blockSize=512 (2reg/block), fileSize=250MB } StreamStore { outBufferSize=0x10000, align=true, fileSize=256MB } 
 
 <table>
   <tr>
@@ -210,7 +210,7 @@ Add the KVStore dependency to your pom.xml:
   </tr>
 </table>
 
-###### Test-2 (org.kvstore.test.BenchMarkMemoryStructures): Registry { count=2e6, datalen=256bytes } BplusTreeMemory { key=Integer, b-order=511 } IntHashMap { initialSize=(2e6 * 2) } 
+###### Test-2 (org.javastack.kvstore.test.BenchMarkMemoryStructures): Registry { count=2e6, datalen=256bytes } BplusTreeMemory { key=Integer, b-order=511 } IntHashMap { initialSize=(2e6 * 2) } 
 
 ---
 Inspired in [Book: Open Data Structures in Java](http://opendatastructures.org/ods-java/14_2_B_Trees.html), [Perl DB_File](http://search.cpan.org/~pmqs/DB_File-1.827/DB_File.pm), [JDBM3](https://github.com/jankotek/JDBM3) and [H2-Database](http://www.h2database.com/), this code is Java-minimalistic version.
