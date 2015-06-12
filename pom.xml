@@ -5,7 +5,7 @@
 	<groupId>org.javastack</groupId>
 	<artifactId>kvstore</artifactId>
 	<version>1.0.0</version>
-	<description>KVStore is a simple Key-Value Store (disk and memory) for Java</description>
+	<description>KVStore is a simple Key-Value Store based on B+Tree (disk and memory) for Java</description>
 
 	<name>${project.groupId}:${project.artifactId}</name>
 	<url>https://github.com/ggrandes/kvstore</url>
