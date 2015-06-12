@@ -8,7 +8,7 @@
 	<description>KVStore is a simple Key-Value Store based on B+Tree (disk and memory) for Java</description>
 
 	<name>${project.groupId}:${project.artifactId}</name>
-	<url>https://github.com/ggrandes/kvstore</url>
+	<url>https://github.com/ggrandes/${project.artifactId}</url>
 	<licenses>
 		<license>
 			<name>The Apache License, Version 2.0</name>
@@ -23,9 +23,9 @@
 		</developer>
 	</developers>
 	<scm>
-		<connection>scm:git:git@github.com:ggrandes/kvstore.git</connection>
-		<developerConnection>scm:git:git@github.com:ggrandes/kvstore.git</developerConnection>
-		<url>git@github.com:ggrandes/kvstore.git</url>
+		<connection>scm:git:git@github.com:ggrandes/${project.artifactId}.git</connection>
+		<developerConnection>scm:git:git@github.com:ggrandes/${project.artifactId}.git</developerConnection>
+		<url>git@github.com:ggrandes/${project.artifactId}.git</url>
 	</scm>
 
 	<dependencies>
