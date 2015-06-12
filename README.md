@@ -1,6 +1,6 @@
 # KVStore
 
-KVStore is a Key-Value Store for Memory & Disk (for BplusTree on disk, keys and values must be fixed length) for Java. Project is Open source (Apache License, Version 2.0) 
+KVStore is a Key-Value Store based on B+Tree for Memory & Disk (for on disk, keys and values must be fixed length) for Java. Project is Open source (Apache License, Version 2.0) 
 
 API is similar to [TreeMap](http://docs.oracle.com/javase/6/docs/api/java/util/TreeMap.html).
 
