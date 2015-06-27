@@ -13,20 +13,22 @@
  *
  */
 package org.javastack.kvstore.structures.stack;
+
 import java.util.ArrayDeque;
 
 /**
  * Basic Stack using ArrayDeque
  * This class is NOT Thread-Safe
+ * 
  * @param <T>
- *
+ * 
  * @author Guillermo Grandes / guillermo.grandes[at]gmail.com
  */
 public final class ObjectStack<T> {
 	private ArrayDeque<T> deque;
 
 	/**
-	 * Constructs an empty stack with an initial capacity sufficient to 
+	 * Constructs an empty stack with an initial capacity sufficient to
 	 * hold 8 elements.
 	 */
 	public ObjectStack() {
@@ -34,8 +36,9 @@ public final class ObjectStack<T> {
 	}
 
 	/**
-	 * Constructs an empty stack with an initial capacity sufficient to 
+	 * Constructs an empty stack with an initial capacity sufficient to
 	 * hold the specified number of elements.
+	 * 
 	 * @param size lower bound on initial capacity of the stack
 	 */
 	public ObjectStack(final int size) {
@@ -43,16 +46,19 @@ public final class ObjectStack<T> {
 	}
 
 	/**
-	 * Removes all of the elements from this stack. 
+	 * Removes all of the elements from this stack.
 	 * The stack will be empty after this call returns.
 	 */
-	public final void clear() { 
-		if (deque.isEmpty()) return;
+	public final void clear() {
+		if (deque.isEmpty()) {
+			return;
+		}
 		deque.clear();
 	}
 
 	/**
 	 * Returns true if this stack contains no elements.
+	 * 
 	 * @return true if this stack contains no elements.
 	 */
 	public final boolean isEmpty() {
@@ -60,8 +66,9 @@ public final class ObjectStack<T> {
 	}
 
 	/**
-	 * Retrieves and removes the last element of this stack, 
+	 * Retrieves and removes the last element of this stack,
 	 * or returns null if this stack is empty.
+	 * 
 	 * @return the tail of this stack, or null if this stack is empty
 	 */
 	public final T pop() {
@@ -70,6 +77,7 @@ public final class ObjectStack<T> {
 
 	/**
 	 * Inserts the specified element at the end of this stack.
+	 * 
 	 * @param e the element to add
 	 */
 	public final void push(final T e) {
@@ -78,10 +86,10 @@ public final class ObjectStack<T> {
 
 	/**
 	 * Return the number of elements in stack
+	 * 
 	 * @return int with number of elements
 	 */
 	public final int size() {
 		return deque.size();
 	}
-
 }

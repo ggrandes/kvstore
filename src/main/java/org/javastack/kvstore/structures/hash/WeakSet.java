@@ -101,7 +101,9 @@ public class WeakSet<T> {
 	 * @param shrink if true, shrink the set to initial size
 	 */
 	public void clear(final boolean shrink) {
-		while (queue.poll() != null);
+		while (queue.poll() != null) {
+			;
+		}
 		if (elementCount > 0) {
 			elementCount = 0;
 		}
@@ -111,7 +113,9 @@ public class WeakSet<T> {
 			Arrays.fill(elementData, null);
 		}
 		computeMaxSize();
-		while (queue.poll() != null);
+		while (queue.poll() != null) {
+			;
+		}
 	}
 
 	/**
@@ -126,8 +130,9 @@ public class WeakSet<T> {
 		final int index = (value.hashCode() & 0x7FFFFFFF) % elementData.length;
 		Entry<T> m = elementData[index];
 		while (m != null) {
-			if (eq(value, m.get()))
+			if (eq(value, m.get())) {
 				return m.get();
+			}
 			m = m.nextInSlot;
 		}
 		return null;
@@ -249,8 +254,9 @@ public class WeakSet<T> {
 		expungeStaleEntries();
 		//
 		final Entry<T> entry = removeEntry(value);
-		if (entry == null)
+		if (entry == null) {
 			return null;
+		}
 		final T ret = entry.get();
 		return ret;
 	}
@@ -262,8 +268,9 @@ public class WeakSet<T> {
 		Entry<T> entry = elementData[index];
 
 		while (true) {
-			if (entry == null)
+			if (entry == null) {
 				return null;
+			}
 
 			if (eq(value, entry.get())) {
 				if (last == null) {
@@ -286,8 +293,9 @@ public class WeakSet<T> {
 	 * @return the number of elements in this set.
 	 */
 	public int size() {
-		if (elementCount == 0)
+		if (elementCount == 0) {
 			return 0;
+		}
 		expungeStaleEntries();
 		return elementCount;
 	}
@@ -309,5 +317,4 @@ public class WeakSet<T> {
 	private static final int primeSize(final int capacity) {
 		return PrimeFinder.nextPrime(capacity);
 	}
-
 }

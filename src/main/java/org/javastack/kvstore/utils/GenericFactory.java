@@ -13,6 +13,7 @@
  *
  */
 package org.javastack.kvstore.utils;
+
 import java.lang.reflect.Array;
 
 /**
@@ -31,16 +32,20 @@ public class GenericFactory<T> {
 
 	/**
 	 * Allocate a new array of objects of type T.
+	 * 
 	 * @param size of the array to allocate
 	 * @return array allocated
 	 */
-	@SuppressWarnings({"unchecked"})
+	@SuppressWarnings({
+		"unchecked"
+	})
 	public T[] newArray(final int size) {
-		return (T[])Array.newInstance(type, size);
+		return (T[]) Array.newInstance(type, size);
 	}
 
 	/**
 	 * Create a new instance of type T
+	 * 
 	 * @return new object of type T
 	 * @throws InstantiationException
 	 * @throws IllegalAccessException

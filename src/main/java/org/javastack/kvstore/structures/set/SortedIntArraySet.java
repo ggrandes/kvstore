@@ -21,63 +21,77 @@ import org.apache.log4j.Logger;
 /**
  * Native Int SortedArray
  * This class is NOT Thread-Safe
- *
+ * 
  * @author Guillermo Grandes / guillermo.grandes[at]gmail.com
  */
 public class SortedIntArraySet {
 	public static final int NULL_VALUE = Integer.MIN_VALUE;
 	private static final Logger log = Logger.getLogger(SortedIntArraySet.class);
-	//
+
 	public int[] keys;
 	public int allocated = 0;
+
 	/**
 	 * Create with initial size
+	 * 
 	 * @param size
 	 */
 	public SortedIntArraySet(final int size) {
 		allocArray(size);
 	}
+
 	/**
 	 * Alloc array
+	 * 
 	 * @param size
 	 */
 	private final void allocArray(final int size) {
 		keys = new int[size];
 	}
+
 	/**
 	 * Resize array
 	 */
 	private final void resizeArray() {
-		if (log.isDebugEnabled())
+		if (log.isDebugEnabled()) {
 			log.debug("resizeArray size=" + keys.length + " newsize=" + (keys.length << 1));
+		}
 		final int[] newkeys = new int[keys.length << 1]; // double space
 		System.arraycopy(keys, 0, newkeys, 0, allocated);
 		keys = newkeys;
 	}
+
 	/**
 	 * Find slot by key
+	 * 
 	 * @param searchKey
 	 * @return
 	 */
 	private final int findSlotByKey(final int searchKey) {
 		return Arrays.binarySearch(keys, 0, allocated, searchKey);
 	}
+
 	/**
 	 * Is empty?
+	 * 
 	 * @return
 	 */
 	public boolean isEmpty() { // empty
 		return (allocated <= 0);
 	}
+
 	/**
 	 * Is full?
+	 * 
 	 * @return
 	 */
 	private final boolean isFull() { // full
-		if (log.isDebugEnabled())
+		if (log.isDebugEnabled()) {
 			log.debug("allocated=" + allocated + " keys.length=" + keys.length);
+		}
 		return (allocated >= keys.length);
 	}
+
 	/**
 	 * Clear all elements
 	 */
@@ -85,24 +99,32 @@ public class SortedIntArraySet {
 		Arrays.fill(keys, NULL_VALUE);
 		allocated = 0;
 	}
+
 	/**
 	 * insert element
 	 */
 	private final void moveElementsRight(final int[] elements, final int srcPos) {
-		if (log.isDebugEnabled())
-			log.debug("moveElementsRight(" + srcPos + ") allocated=" + allocated + ":" + keys.length + ":" + (allocated - srcPos) + ":" + (keys.length - srcPos - 1));
+		if (log.isDebugEnabled()) {
+			log.debug("moveElementsRight(" + srcPos + ") allocated=" + allocated + ":" + keys.length + ":"
+					+ (allocated - srcPos) + ":" + (keys.length - srcPos - 1));
+		}
 		System.arraycopy(elements, srcPos, elements, srcPos + 1, (allocated - srcPos));
 	}
+
 	/**
 	 * remove element
 	 */
 	private final void moveElementsLeft(final int[] elements, final int srcPos) {
-		if (log.isDebugEnabled())
-			log.debug("moveElementsLeft(" + srcPos + ") allocated=" + allocated + ":" + keys.length + ":" + (allocated - srcPos - 1) + ":" + (keys.length - srcPos - 1));
+		if (log.isDebugEnabled()) {
+			log.debug("moveElementsLeft(" + srcPos + ") allocated=" + allocated + ":" + keys.length + ":"
+					+ (allocated - srcPos - 1) + ":" + (keys.length - srcPos - 1));
+		}
 		System.arraycopy(elements, srcPos + 1, elements, srcPos, (allocated - srcPos - 1));
 	}
+
 	/**
 	 * remove slot
+	 * 
 	 * @param slot
 	 * @return
 	 */
@@ -114,15 +136,19 @@ public class SortedIntArraySet {
 		if (slot < allocated) {
 			moveElementsLeft(keys, slot);
 		}
-		if (allocated > 0)
+		if (allocated > 0) {
 			allocated--;
-		if (log.isDebugEnabled())
+		}
+		if (log.isDebugEnabled()) {
 			log.debug("erased up key=" + keys[allocated]);
+		}
 		keys[allocated] = NULL_VALUE;
 		return true;
 	}
+
 	/**
 	 * remove key
+	 * 
 	 * @param key
 	 * @return
 	 */
@@ -133,8 +159,10 @@ public class SortedIntArraySet {
 		}
 		return false;
 	}
+
 	/**
 	 * put key
+	 * 
 	 * @param key
 	 * @return
 	 */
@@ -144,15 +172,18 @@ public class SortedIntArraySet {
 		}
 		int slot = findSlotByKey(key);
 		if (slot >= 0) {
-			if (log.isDebugEnabled())
+			if (log.isDebugEnabled()) {
 				log.debug("key already exists: " + key);
+			}
 			return false; // key already exist
 		}
 		slot = ((-slot) - 1);
 		return addSlot(slot, key);
 	}
+
 	/**
 	 * add slot
+	 * 
 	 * @param slot
 	 * @param key
 	 * @return
@@ -165,76 +196,95 @@ public class SortedIntArraySet {
 		keys[slot] = key;
 		return true;
 	}
+
 	/**
 	 * Returns the first (lowest) element currently in this set.
 	 */
 	public int first() {
 		return keys[0];
 	}
+
 	/**
 	 * Returns the last (highest) element currently in this set.
 	 */
 	public int last() {
-		if (allocated == 0)
+		if (allocated == 0) {
 			return NULL_VALUE;
-		return keys[allocated-1];
+		}
+		return keys[allocated - 1];
 	}
+
 	/**
-	 * Returns the greatest element in this set less than or equal to the given element, or NULL_VALUE if there is no such element.	
+	 * Returns the greatest element in this set less than or equal to the given element, or NULL_VALUE if
+	 * there is no such element.
+	 * 
 	 * @param key
 	 */
 	public int floor(final int key) {
 		return getRoundKey(key, false, true);
 	}
+
 	/**
-	 * Returns the least element in this set greater than or equal to the given element, or NULL_VALUE if there is no such element.
+	 * Returns the least element in this set greater than or equal to the given element, or NULL_VALUE if
+	 * there is no such element.
+	 * 
 	 * @param key
 	 */
 	public int ceiling(final int key) {
 		return getRoundKey(key, true, true);
 	}
+
 	/**
-	 * Returns the greatest element in this set strictly less than the given element, or NULL_VALUE if there is no such element.
+	 * Returns the greatest element in this set strictly less than the given element, or NULL_VALUE if there
+	 * is no such element.
+	 * 
 	 * @param key
 	 */
 	public int lower(final int key) {
 		return getRoundKey(key, false, false);
 	}
+
 	/**
-	 * Returns the least element in this set strictly greater than the given element, or NULL_VALUE if there is no such element.
+	 * Returns the least element in this set strictly greater than the given element, or NULL_VALUE if there
+	 * is no such element.
+	 * 
 	 * @param key
 	 */
 	public int higher(final int key) {
 		return getRoundKey(key, true, false);
 	}
+
 	/**
 	 * find key
+	 * 
 	 * @param key
 	 * @param upORdown
 	 * @param acceptEqual
 	 * @return
 	 */
 	private final int getRoundKey(final int key, final boolean upORdown, final boolean acceptEqual) {
-		if (isEmpty()) return NULL_VALUE;
+		if (isEmpty())
+			return NULL_VALUE;
 		int slot = findSlotByKey(key);
 		if (upORdown) {
 			// ceiling / higher
-			slot = ((slot < 0) ? (-slot)-1 : (acceptEqual ? slot : slot+1));
+			slot = ((slot < 0) ? (-slot) - 1 : (acceptEqual ? slot : slot + 1));
 			if (slot >= allocated) {
 				return NULL_VALUE;
 			}
-		}
-		else {
+		} else {
 			// floor / lower
-			slot = ((slot < 0) ? (-slot)-2 : (acceptEqual ? slot : slot-1));
+			slot = ((slot < 0) ? (-slot) - 2 : (acceptEqual ? slot : slot - 1));
 			if (slot < 0) {
 				return NULL_VALUE;
 			}
 		}
 		return keys[slot];
-	}	
+	}
+
 	/**
 	 * Returns true if this set contains the specified element.
+	 * 
 	 * @param key
 	 * @return
 	 */
@@ -242,18 +292,23 @@ public class SortedIntArraySet {
 		int slot = findSlotByKey(key);
 		return (slot >= 0);
 	}
+
 	/**
 	 * Returns the element at the specified position in his internal array.
+	 * 
 	 * @param slot
 	 * @return
 	 */
 	public int get(final int slot) {
-		if ((slot < 0) || (slot >= allocated))
+		if ((slot < 0) || (slot >= allocated)) {
 			return NULL_VALUE;
+		}
 		return keys[slot];
 	}
+
 	/**
 	 * Returns the number of elements in this set (its cardinality).
+	 * 
 	 * @return
 	 */
 	public int size() {
@@ -268,8 +323,9 @@ public class SortedIntArraySet {
 			final int k = keys[i];
 			sb.append(k).append("|");
 		}
-		if (allocated > 0)
+		if (allocated > 0) {
 			sb.setLength(sb.length() - 1);
+		}
 		sb.append("]");
 		return sb.toString();
 	}
@@ -293,8 +349,9 @@ public class SortedIntArraySet {
 		}
 
 		public void remove() {
-			if (lastReturned == -1)
+			if (lastReturned == -1) {
 				throw new IllegalStateException();
+			}
 
 			associatedSet.removeSlot(lastReturned);
 			lastReturned = -1;
@@ -308,6 +365,7 @@ public class SortedIntArraySet {
 
 	/**
 	 * Test
+	 * 
 	 * @param args
 	 */
 	public static void main(final String[] args) {
@@ -356,5 +414,4 @@ public class SortedIntArraySet {
 		System.out.println("first=" + s.first());
 		System.out.println("last()=" + s.last());
 	}
-
 }

@@ -27,6 +27,7 @@ public class Check64bitsJVM {
 		}
 		return false;
 	}
+
 	public static void main(final String[] args) throws Throwable {
 		System.out.println("JVM is 64bits?: " + JVMis64bits());
 	}

@@ -19,7 +19,7 @@ import java.util.zip.Checksum;
 /**
  * Checksum CRC32C
  * This class is Thread-Safe
- *
+ * 
  * @author Guillermo Grandes / guillermo.grandes[at]gmail.com
  */
 public final class CRC32C implements Checksum {
@@ -33,10 +33,13 @@ public final class CRC32C implements Checksum {
 	 * "Optimization of Cyclic Redundancy-Check Codes with 24 and 32 Parity Bits", 
 	 * IEEE Transactions on Communications, Vol.41, No.6, June 1993
 	 * </pre>
+	 * 
 	 * poly=0x1edc6f41 init=0xffffffff refin=true refout=true xorout=0xffffffff
+	 * 
 	 * @url http://www.ietf.org/rfc/rfc3309.txt
 	 * @url http://reveng.sourceforge.net/crc-catalogue/17plus.htm
 	 */
+	// @formatter:off
 	protected static final int[] CRC_TABLE = {
 		0x00000000, 0xF26B8303, 0xE13B70F7, 0x1350F3F4,
 		0xC79A971F, 0x35F1141C, 0x26A1E7E8, 0xD4CA64EB,
@@ -103,11 +106,12 @@ public final class CRC32C implements Checksum {
 		0x79B737BA, 0x8BDCB4B9, 0x988C474D, 0x6AE7C44E,
 		0xBE2DA0A5, 0x4C4623A6, 0x5F16D052, 0xAD7D5351,
 	};
+	// @formatter:on
 
 	private int crc = ~0;
 
 	public final void update(int d) {
-		crc = ((crc>>>8)^CRC_TABLE[(crc^(d&0xFF))&0xFF]);
+		crc = ((crc >>> 8) ^ CRC_TABLE[(crc ^ (d & 0xFF)) & 0xFF]);
 	}
 
 	public final void update(final byte[] buffer, final int offset, int length) {
@@ -121,11 +125,10 @@ public final class CRC32C implements Checksum {
 	}
 
 	public final long getValue() {
-		return ((long)(crc ^ 0xFFFFFFFF) & 0xFFFFFFFFL);
+		return ((long) (crc ^ 0xFFFFFFFF) & 0xFFFFFFFFL);
 	}
 
 	public final void reset() {
 		crc = ~0;
 	}
-
 }

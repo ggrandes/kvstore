@@ -13,6 +13,7 @@
  *
  */
 package org.javastack.kvstore.structures.hash;
+
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -25,8 +26,9 @@ import org.javastack.kvstore.utils.PrimeFinder;
 /**
  * Native Integer LinkedHashMap
  * This class is NOT Thread-Safe
+ * 
  * @param <V> type of values
- *
+ * 
  * @author Guillermo Grandes / guillermo.grandes[at]gmail.com
  */
 public class IntLinkedHashMap<V> implements Iterable<V> {
@@ -47,25 +49,27 @@ public class IntLinkedHashMap<V> implements Iterable<V> {
 	private transient IntLinkedEntry<V> header;
 
 	/**
-	 * The iteration ordering method for this linked hash map: <tt>true</tt>
-	 * for access-order, <tt>false</tt> for insertion-order.
-	 *
+	 * The iteration ordering method for this linked hash map: <tt>true</tt> for access-order, <tt>false</tt>
+	 * for insertion-order.
+	 * 
 	 * @serial
 	 */
 	private final boolean accessOrder;
 
 	/**
 	 * Constructs a new {@code IntLinkedHashMap} instance with the specified capacity.
-	 *
+	 * 
 	 * @param capacity the initial capacity of this hash map.
 	 * @throws IllegalArgumentException when the capacity is less than zero.
 	 */
 	public IntLinkedHashMap(final Class<V> type) {
 		this(17, type, false);
 	}
+
 	public IntLinkedHashMap(final int capacity, final Class<V> type) {
 		this(capacity, type, false);
 	}
+
 	public IntLinkedHashMap(final int capacity, final Class<V> type, final boolean accessOrder) {
 		this.accessOrder = accessOrder;
 		//
@@ -91,7 +95,7 @@ public class IntLinkedHashMap<V> implements Iterable<V> {
 
 	/**
 	 * Removes all mappings from this hash map, leaving it empty.
-	 *
+	 * 
 	 * @see #isEmpty
 	 * @see #size
 	 */
@@ -101,13 +105,12 @@ public class IntLinkedHashMap<V> implements Iterable<V> {
 
 	public void clear(final boolean shrink) {
 		clearCache();
-		if (elementCount > 0) {            
-			elementCount = 0;            
+		if (elementCount > 0) {
+			elementCount = 0;
 		}
 		if (shrink && (elementData.length > 1024) && (elementData.length > defaultSize)) {
 			elementData = newElementArray(defaultSize);
-		}
-		else {
+		} else {
 			Arrays.fill(elementData, null);
 		}
 		computeMaxSize();
@@ -124,13 +127,12 @@ public class IntLinkedHashMap<V> implements Iterable<V> {
 		threshold = (int) (elementData.length * loadFactor);
 	}
 
-
 	/**
 	 * Returns the value of the mapping with the specified key.
-	 *
+	 * 
 	 * @param key the key.
-	 * @return the value of the mapping with the specified key, or {@code null}
-	 *         if no mapping for the specified key is found.
+	 * @return the value of the mapping with the specified key, or {@code null} if no mapping for the
+	 *         specified key is found.
 	 */
 	public V get(final int key) {
 		final int index = (key & 0x7FFFFFFF) % elementData.length;
@@ -139,7 +141,7 @@ public class IntLinkedHashMap<V> implements Iterable<V> {
 		while (m != null) {
 			if (key == m.key) {
 				if (accessOrder) {
-					//if (log.isDebugEnabled()) log.debug("reliking " + this.key);
+					// if (log.isDebugEnabled()) log.debug("reliking " + this.key);
 					m.remove();
 					m.addBefore(header);
 				}
@@ -150,12 +152,10 @@ public class IntLinkedHashMap<V> implements Iterable<V> {
 		return null;
 	}
 
-
 	/**
 	 * Returns whether this map is empty.
-	 *
-	 * @return {@code true} if this map has no elements, {@code false}
-	 *         otherwise.
+	 * 
+	 * @return {@code true} if this map has no elements, {@code false} otherwise.
 	 * @see #size()
 	 */
 	public boolean isEmpty() {
@@ -164,11 +164,11 @@ public class IntLinkedHashMap<V> implements Iterable<V> {
 
 	/**
 	 * Maps the specified key to the specified value.
-	 *
-	 * @param key   the key.
+	 * 
+	 * @param key the key.
 	 * @param value the value.
-	 * @return the value of any previous mapping with the specified key or
-	 *         {@code null} if there was no such mapping.
+	 * @return the value of any previous mapping with the specified key or {@code null} if there was no such
+	 *         mapping.
 	 */
 	public V put(final int key, final V value) {
 		int index = (key & 0x7FFFFFFF) % elementData.length;
@@ -202,8 +202,7 @@ public class IntLinkedHashMap<V> implements Iterable<V> {
 		IntLinkedEntry<V> entry = reuseAfterDelete();
 		if (entry == null) {
 			entry = new IntLinkedEntry<V>(key);
-		} 
-		else {
+		} else {
 			entry.key = key;
 			entry.value = null;
 		}
@@ -216,7 +215,8 @@ public class IntLinkedHashMap<V> implements Iterable<V> {
 
 	void rehash(final int capacity) {
 		final int length = primeSize(capacity == 0 ? 1 : capacity << 1);
-		if (log.isDebugEnabled()) log.debug(this.getClass().getName() + "::rehash() old=" + elementData.length + " new=" + length);
+		if (log.isDebugEnabled())
+			log.debug(this.getClass().getName() + "::rehash() old=" + elementData.length + " new=" + length);
 
 		IntLinkedEntry<V>[] newData = newElementArray(length);
 		for (int i = 0; i < elementData.length; i++) {
@@ -239,15 +239,16 @@ public class IntLinkedHashMap<V> implements Iterable<V> {
 
 	/**
 	 * Removes the mapping with the specified key from this map.
-	 *
+	 * 
 	 * @param key the key of the mapping to remove.
 	 * @return the value of the removed mapping or {@code null} if no mapping
 	 *         for the specified key was found.
 	 */
 	public V remove(final int key) {
 		IntLinkedEntry<V> entry = removeEntry(key);
-		if (entry == null)
+		if (entry == null) {
 			return null;
+		}
 		V ret = entry.value;
 		reuseAfterDelete(entry);
 
@@ -268,8 +269,9 @@ public class IntLinkedHashMap<V> implements Iterable<V> {
 		IntLinkedEntry<V> entry = elementData[index];
 
 		while (true) {
-			if (entry == null)
+			if (entry == null) {
 				return null;
+			}
 
 			if (key == entry.key) {
 				if (last == null) {
@@ -289,7 +291,7 @@ public class IntLinkedHashMap<V> implements Iterable<V> {
 
 	/**
 	 * Returns the number of elements in this map.
-	 *
+	 * 
 	 * @return the number of elements in this map.
 	 */
 	public int size() {
@@ -298,38 +300,26 @@ public class IntLinkedHashMap<V> implements Iterable<V> {
 
 	// ========== Entry Cache
 
-	/*
-	private transient Entry<V> reuseAfterDelete = null;
-
-	private void initCache(int size) {}
-	private void clearCache() {}
-
-	private Entry<V> reuseAfterDelete() {
-		final Entry<V> ret = reuseAfterDelete;
-		reuseAfterDelete = null;
-		return ret;
-	}
-	private void reuseAfterDelete(final Entry<V> entry) {
-		entry.clean();
-		reuseAfterDelete = entry;
-	}
-	 */
-
 	private ArrayDeque<IntLinkedEntry<V>> cache;
 
 	private void initCache(final int size) {
 		cache = new ArrayDeque<IntLinkedEntry<V>>(size);
 	}
-	public void clearCache() { 
+
+	public void clearCache() {
 		cache.clear();
 	}
+
 	private IntLinkedEntry<V> reuseAfterDelete() {
 		final IntLinkedEntry<V> reuse = cache.pollLast();
-		/*if (reuse != null) {
-			if (log.isDebugEnabled()) log.debug("reusing IntLinkedEntry<V>=" + reuse.hashCode() + " cacheSize=" + cache.size());
-		}*/
+		// if (reuse != null) {
+		// if (log.isDebugEnabled()) {
+		// log.debug("reusing IntLinkedEntry<V>=" + reuse.hashCode() + " cacheSize=" + cache.size());
+		// }
+		// }
 		return reuse;
 	}
+
 	private void reuseAfterDelete(final IntLinkedEntry<V> entry) {
 		entry.clean();
 		cache.offerLast(entry);
@@ -370,7 +360,7 @@ public class IntLinkedHashMap<V> implements Iterable<V> {
 		 * Inserts this entry before the specified existing entry in the list.
 		 */
 		private void addBefore(IntLinkedEntry<V> existingEntry) {
-			after  = existingEntry;
+			after = existingEntry;
 			before = existingEntry.before;
 			before.after = this;
 			after.before = this;
@@ -378,16 +368,16 @@ public class IntLinkedHashMap<V> implements Iterable<V> {
 
 		/**
 		 * Returns the key corresponding to this entry.
-		 *
+		 * 
 		 * @return the key corresponding to this entry
 		 */
 		public int getKey() {
 			return key;
 		}
-		
+
 		/**
 		 * Returns the value corresponding to this entry.
-		 *
+		 * 
 		 * @return the value corresponding to this entry
 		 */
 		public V getValue() {
@@ -400,43 +390,44 @@ public class IntLinkedHashMap<V> implements Iterable<V> {
 	/**
 	 * Returns <tt>true</tt> if this map should remove its eldest entry.
 	 * This method is invoked by <tt>put</tt> and <tt>putAll</tt> after
-	 * inserting a new entry into the map.  It provides the implementor
+	 * inserting a new entry into the map. It provides the implementor
 	 * with the opportunity to remove the eldest entry each time a new one
-	 * is added.  This is useful if the map represents a cache: it allows
+	 * is added. This is useful if the map represents a cache: it allows
 	 * the map to reduce memory consumption by deleting stale entries.
-	 *
-	 * <p>Sample use: this override will allow the map to grow up to 100
-	 * entries and then delete the eldest entry each time a new entry is
-	 * added, maintaining a steady state of 100 entries.
+	 * 
+	 * <p>
+	 * Sample use: this override will allow the map to grow up to 100 entries and then delete the eldest entry
+	 * each time a new entry is added, maintaining a steady state of 100 entries.
+	 * 
 	 * <pre>
-	 *     private static final int MAX_ENTRIES = 100;
-	 *
-	 *     protected boolean removeEldestEntry(IntLinkedEntry eldest) {
-	 *        return size() > MAX_ENTRIES;
-	 *     }
+	 * private static final int MAX_ENTRIES = 100;
+	 * 
+	 * protected boolean removeEldestEntry(IntLinkedEntry eldest) {
+	 * 	return size() &gt; MAX_ENTRIES;
+	 * }
 	 * </pre>
-	 *
-	 * <p>This method typically does not modify the map in any way,
-	 * instead allowing the map to modify itself as directed by its
-	 * return value.  It <i>is</i> permitted for this method to modify
-	 * the map directly, but if it does so, it <i>must</i> return
-	 * <tt>false</tt> (indicating that the map should not attempt any
-	 * further modification).  The effects of returning <tt>true</tt>
-	 * after modifying the map from within this method are unspecified.
-	 *
-	 * <p>This implementation merely returns <tt>false</tt> (so that this
-	 * map acts like a normal map - the eldest element is never removed).
-	 *
-	 * @param    eldest The least recently inserted entry in the map, or if
-	 *           this is an access-ordered map, the least recently accessed
-	 *           entry.  This is the entry that will be removed it this
-	 *           method returns <tt>true</tt>.  If the map was empty prior
-	 *           to the <tt>put</tt> or <tt>putAll</tt> invocation resulting
-	 *           in this invocation, this will be the entry that was just
-	 *           inserted; in other words, if the map contains a single
-	 *           entry, the eldest entry is also the newest.
-	 * @return   <tt>true</tt> if the eldest entry should be removed
-	 *           from the map; <tt>false</tt> if it should be retained.
+	 * 
+	 * <p>
+	 * This method typically does not modify the map in any way, instead allowing the map to modify itself as
+	 * directed by its return value. It <i>is</i> permitted for this method to modify the map directly, but if
+	 * it does so, it <i>must</i> return <tt>false</tt> (indicating that the map should not attempt any
+	 * further modification). The effects of returning <tt>true</tt> after modifying the map from within this
+	 * method are unspecified.
+	 * 
+	 * <p>
+	 * This implementation merely returns <tt>false</tt> (so that this map acts like a normal map - the eldest
+	 * element is never removed).
+	 * 
+	 * @param eldest The least recently inserted entry in the map, or if
+	 *            this is an access-ordered map, the least recently accessed
+	 *            entry. This is the entry that will be removed it this
+	 *            method returns <tt>true</tt>. If the map was empty prior
+	 *            to the <tt>put</tt> or <tt>putAll</tt> invocation resulting
+	 *            in this invocation, this will be the entry that was just
+	 *            inserted; in other words, if the map contains a single
+	 *            entry, the eldest entry is also the newest.
+	 * @return <tt>true</tt> if the eldest entry should be removed
+	 *         from the map; <tt>false</tt> if it should be retained.
 	 */
 	protected boolean removeEldestEntry(IntLinkedEntry<V> eldest) {
 		return false;
@@ -445,7 +436,7 @@ public class IntLinkedHashMap<V> implements Iterable<V> {
 	// ========== Prime Finder
 
 	private static final int primeSize(final int capacity) {
-		//return java.math.BigInteger.valueOf((long)capacity).nextProbablePrime().intValue();
+		// return java.math.BigInteger.valueOf((long)capacity).nextProbablePrime().intValue();
 		return PrimeFinder.nextPrime(capacity);
 	}
 
@@ -460,7 +451,7 @@ public class IntLinkedHashMap<V> implements Iterable<V> {
 
 	static class IntLinkedHashMapIterator<V> implements Iterator<V> {
 		final IntLinkedHashMap<V> associatedMap;
-		IntLinkedEntry<V> nextEntry    = null;
+		IntLinkedEntry<V> nextEntry = null;
 		IntLinkedEntry<V> lastReturned = null;
 
 		public IntLinkedHashMapIterator(final IntLinkedHashMap<V> associatedMap) {
@@ -488,7 +479,10 @@ public class IntLinkedHashMap<V> implements Iterable<V> {
 			nextEntry = e.after;
 			return e;
 		}
-		public V next() { return nextEntry().value; }
+
+		public V next() {
+			return nextEntry().value;
+		}
 	}
 
 	// =========================================
@@ -505,16 +499,7 @@ public class IntLinkedHashMap<V> implements Iterable<V> {
 	// =========================================
 
 	public static void main(String[] args) {
-		IntLinkedHashMap<Integer> hash = new IntLinkedHashMap<Integer>(16, Integer.class, true) {
-			/*protected boolean removeEldestEntry(IntLinkedEntry<Integer> eldest) {
-				System.out.println("---- begin");
-				for (Integer i : this) {
-					System.out.println(i);
-				}
-				System.out.println("---- end");
-				return (size() > 3);
-	        }*/
-		};
+		IntLinkedHashMap<Integer> hash = new IntLinkedHashMap<Integer>(16, Integer.class, true);
 		for (int i = 1; i < 6; i++) { // 1...4
 			hash.put(i, i);
 		}
@@ -523,7 +508,7 @@ public class IntLinkedHashMap<V> implements Iterable<V> {
 		hash.put(3, 3);
 		hash.put(3, 3);
 		hash.get(3);
-		//hash.remove(3);
+		// hash.remove(3);
 		for (Integer i : hash) {
 			System.out.println(i);
 		}

@@ -14,6 +14,7 @@
  */
 
 package org.javastack.kvstore.structures.hash;
+
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -26,9 +27,9 @@ import org.javastack.kvstore.utils.PrimeFinder;
 /**
  * Native Integer HashMap
  * This class is NOT Thread-Safe
- *
+ * 
  * @param <V> type of values
- *
+ * 
  * @author Guillermo Grandes / guillermo.grandes[at]gmail.com
  */
 public class IntHashMap<V> implements Iterable<V> {
@@ -45,7 +46,7 @@ public class IntHashMap<V> implements Iterable<V> {
 
 	/**
 	 * Constructs a new {@code IntHashMap} instance with the specified capacity.
-	 *
+	 * 
 	 * @param capacity the initial capacity of this hash map.
 	 * @param type class for values
 	 */
@@ -65,7 +66,7 @@ public class IntHashMap<V> implements Iterable<V> {
 
 	/**
 	 * Constructs a new {@code IntHashMap} instance with default capacity (17).
-	 *
+	 * 
 	 * @param type class for values
 	 */
 	public IntHashMap(final Class<V> type) {
@@ -77,10 +78,9 @@ public class IntHashMap<V> implements Iterable<V> {
 		return new IntEntry[s];
 	}
 
-
 	/**
 	 * Removes all mappings from this hash map, leaving it empty.
-	 *
+	 * 
 	 * @see #isEmpty
 	 * @see #size
 	 */
@@ -90,18 +90,18 @@ public class IntHashMap<V> implements Iterable<V> {
 
 	/**
 	 * Clear the map
+	 * 
 	 * @param shrink if true shrink the map to initial size
 	 */
 	@SuppressWarnings("unchecked")
 	public void clear(final boolean shrink) {
 		clearCache();
-		if (elementCount > 0) {            
-			elementCount = 0;            
+		if (elementCount > 0) {
+			elementCount = 0;
 		}
 		if (shrink && (elementData.length > 1024) && (elementData.length > defaultSize)) {
 			elementData = new IntEntry[defaultSize];
-		}
-		else {
+		} else {
 			Arrays.fill(elementData, null);
 		}
 		computeMaxSize();
@@ -111,21 +111,21 @@ public class IntHashMap<V> implements Iterable<V> {
 		threshold = (int) (elementData.length * loadFactor);
 	}
 
-
 	/**
 	 * Returns the value of specified key.
-	 *
+	 * 
 	 * @param key the key.
-	 * @return the value of the mapping with the specified key, or {@code null}
-	 *         if no mapping for the specified key is found.
+	 * @return the value of the mapping with the specified key, or {@code null} if no mapping for the
+	 *         specified key is found.
 	 */
 	public V get(final int key) {
 		final int index = (key & 0x7FFFFFFF) % elementData.length;
 
 		IntEntry<V> m = elementData[index];
 		while (m != null) {
-			if (key == m.key)
+			if (key == m.key) {
 				return m.value;
+			}
 			m = m.nextInSlot;
 		}
 		return null;
@@ -133,9 +133,8 @@ public class IntHashMap<V> implements Iterable<V> {
 
 	/**
 	 * Returns whether this map is empty.
-	 *
-	 * @return {@code true} if this map has no elements, {@code false}
-	 *         otherwise.
+	 * 
+	 * @return {@code true} if this map has no elements, {@code false} otherwise.
 	 * @see #size()
 	 */
 	public boolean isEmpty() {
@@ -144,11 +143,11 @@ public class IntHashMap<V> implements Iterable<V> {
 
 	/**
 	 * Maps the specified key to the specified value.
-	 *
-	 * @param key   the key.
+	 * 
+	 * @param key the key.
 	 * @param value the value.
-	 * @return the value of any previous mapping with the specified key or
-	 *         {@code null} if there was no such mapping.
+	 * @return the value of any previous mapping with the specified key or {@code null} if there was no such
+	 *         mapping.
 	 */
 	public V put(final int key, final V value) {
 		int index = (key & 0x7FFFFFFF) % elementData.length;
@@ -171,13 +170,11 @@ public class IntHashMap<V> implements Iterable<V> {
 		return result;
 	}
 
-
 	IntEntry<V> createHashedEntry(final int key, final int index) {
 		IntEntry<V> entry = reuseAfterDelete();
 		if (entry == null) {
 			entry = new IntEntry<V>(key);
-		} 
-		else {
+		} else {
 			entry.key = key;
 			entry.value = null;
 		}
@@ -189,7 +186,9 @@ public class IntHashMap<V> implements Iterable<V> {
 
 	void rehash(final int capacity) {
 		final int length = primeSize(capacity == 0 ? 1 : capacity << 1);
-		if (log.isDebugEnabled()) log.debug(this.getClass().getName() + "::rehash() old=" + elementData.length + " new=" + length);
+		if (log.isDebugEnabled()) {
+			log.debug(this.getClass().getName() + "::rehash() old=" + elementData.length + " new=" + length);
+		}
 
 		IntEntry<V>[] newData = newElementArray(length);
 		for (int i = 0; i < elementData.length; i++) {
@@ -212,15 +211,16 @@ public class IntHashMap<V> implements Iterable<V> {
 
 	/**
 	 * Removes the mapping with the specified key from this map.
-	 *
+	 * 
 	 * @param key the key of the mapping to remove.
 	 * @return the value of the removed mapping or {@code null} if no mapping
 	 *         for the specified key was found.
 	 */
 	public V remove(final int key) {
 		IntEntry<V> entry = removeEntry(key);
-		if (entry == null)
+		if (entry == null) {
 			return null;
+		}
 		V ret = entry.value;
 		reuseAfterDelete(entry);
 
@@ -234,8 +234,9 @@ public class IntHashMap<V> implements Iterable<V> {
 		IntEntry<V> entry = elementData[index];
 
 		while (true) {
-			if (entry == null)
+			if (entry == null) {
 				return null;
+			}
 
 			if (key == entry.key) {
 				if (last == null) {
@@ -254,7 +255,7 @@ public class IntHashMap<V> implements Iterable<V> {
 
 	/**
 	 * Returns the number of elements in this map.
-	 *
+	 * 
 	 * @return the number of elements in this map.
 	 */
 	public int size() {
@@ -263,34 +264,20 @@ public class IntHashMap<V> implements Iterable<V> {
 
 	// ========== Entry Cache
 
-	/*
-	private transient Entry<V> reuseAfterDelete = null;
-
-	private void initCache(int size) {}
-	private void clearCache() {}
-
-	private Entry<V> reuseAfterDelete() {
-		final Entry<V> ret = reuseAfterDelete;
-		reuseAfterDelete = null;
-		return ret;
-	}
-	private void reuseAfterDelete(final Entry<V> entry) {
-		entry.clean();
-		reuseAfterDelete = entry;
-	}
-	 */
-
 	private ArrayDeque<IntEntry<V>> cache;
 
 	private void initCache(final int size) {
 		cache = new ArrayDeque<IntEntry<V>>(size);
 	}
-	public void clearCache() { 
+
+	public void clearCache() {
 		cache.clear();
 	}
+
 	private IntEntry<V> reuseAfterDelete() {
 		return cache.pollLast();
 	}
+
 	private void reuseAfterDelete(final IntEntry<V> entry) {
 		entry.clean();
 		cache.offerLast(entry);
@@ -307,6 +294,7 @@ public class IntHashMap<V> implements Iterable<V> {
 			this.key = theKey;
 			this.value = null;
 		}
+
 		void clean() {
 			value = null;
 			key = Integer.MIN_VALUE;
@@ -317,7 +305,7 @@ public class IntHashMap<V> implements Iterable<V> {
 	// ========== Prime Finder
 
 	private static final int primeSize(final int capacity) {
-		//return java.math.BigInteger.valueOf((long)capacity).nextProbablePrime().intValue();
+		// return java.math.BigInteger.valueOf((long)capacity).nextProbablePrime().intValue();
 		return PrimeFinder.nextPrime(capacity);
 	}
 
@@ -355,8 +343,7 @@ public class IntHashMap<V> implements Iterable<V> {
 			while (newPosition < length) {
 				if (elementData[newPosition] == null) {
 					newPosition++;
-				} 
-				else {
+				} else {
 					result = true;
 					break;
 				}
@@ -376,8 +363,7 @@ public class IntHashMap<V> implements Iterable<V> {
 			if (_entry == null) {
 				result = lastEntry = associatedMap.elementData[position++];
 				entry = lastEntry.nextInSlot;
-			} 
-			else {
+			} else {
 				if (lastEntry.nextInSlot != _entry) {
 					lastEntry = lastEntry.nextInSlot;
 				}
@@ -401,8 +387,7 @@ public class IntHashMap<V> implements Iterable<V> {
 				}
 				associatedMap.elementData[position] = associatedMap.elementData[position].nextInSlot;
 				entry = null;
-			} 
-			else {
+			} else {
 				lastEntry.nextInSlot = entry;
 			}
 			if (lastEntry != null) {
@@ -419,6 +404,7 @@ public class IntHashMap<V> implements Iterable<V> {
 
 	/**
 	 * Return an array with values in this map
+	 * 
 	 * @return array with values
 	 */
 	public V[] getValues() {
@@ -440,17 +426,19 @@ public class IntHashMap<V> implements Iterable<V> {
 			while (capacity < Integer.MAX_VALUE) {
 				capacity = java.math.BigInteger.valueOf(capacity).nextProbablePrime().longValue();
 				System.out.print(capacity + ", ");
-				final double inc = Math.log(2)/Math.log(capacity<<5) * 10 + 1; 
-				//System.out.println(inc);
-				capacity *= inc; 
-				if (count % 5 == 0) System.out.println();
+				final double inc = Math.log(2) / Math.log(capacity << 5) * 10 + 1;
+				// System.out.println(inc);
+				capacity *= inc;
+				if (count % 5 == 0) {
+					System.out.println();
+				}
 				count++;
 			}
 			System.out.println(Integer.MAX_VALUE);
 			System.out.println("------");
 
 			System.out.println(count);
-			System.out.println(PrimeFinder.nextPrime((int)1e6));
+			System.out.println(PrimeFinder.nextPrime((int) 1e6));
 		}
 		if (true) {
 			IntHashMap<Integer> hash = new IntHashMap<Integer>(16, Integer.class);

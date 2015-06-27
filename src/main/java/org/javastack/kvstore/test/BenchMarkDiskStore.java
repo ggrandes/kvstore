@@ -30,7 +30,7 @@ public class BenchMarkDiskStore {
 	private static final int TOTAL = (int) 1e6, TRACE_LEN = 100000;
 	private static final String TEST_STREAM_FILE = "/tmp/data/stream";
 	private static final String TEST_BLOCK_FILE = "/tmp/data/block";
-	//
+
 	public long long1;
 	public long long2;
 	public long long3;
@@ -41,7 +41,6 @@ public class BenchMarkDiskStore {
 	public String str3;
 	public String str4;
 
-	//
 	public BenchMarkDiskStore() {
 	}
 

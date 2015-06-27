@@ -13,12 +13,13 @@
  *
  */
 package org.javastack.kvstore.structures.stack;
+
 import java.util.Arrays;
 
 /**
  * Native Int Stack
  * This class is NOT Thread-Safe
- *
+ * 
  * @author Guillermo Grandes / guillermo.grandes[at]gmail.com
  */
 public class IntStack {
@@ -29,6 +30,7 @@ public class IntStack {
 
 	/**
 	 * Instantiate Native Int Stack of specified size and default null value (-1)
+	 * 
 	 * @param size size of stack
 	 */
 	public IntStack(final int size) {
@@ -37,6 +39,7 @@ public class IntStack {
 
 	/**
 	 * Instantiate Native Int Stack of specified size and custom null value
+	 * 
 	 * @param size size of stack
 	 * @param null_value to return if stack is empty
 	 */
@@ -48,7 +51,7 @@ public class IntStack {
 	// Resize Stack
 	private final void growToHold(final int length) {
 		if (length > stack.length) {
-			final int[] newStack = new int[Math.max(length, stack.length*2)];
+			final int[] newStack = new int[Math.max(length, stack.length * 2)];
 			System.arraycopy(stack, 0, newStack, 0, stack.length);
 			stack = newStack;
 		}
@@ -58,13 +61,16 @@ public class IntStack {
 	 * Removes all of the elements from this stack. The stack will be empty after this call returns.
 	 */
 	public void clear() {
-		if (isEmpty()) return;
+		if (isEmpty()) {
+			return;
+		}
 		stackPointer = 0;
 		Arrays.fill(stack, null_value);
 	}
 
 	/**
 	 * Returns true if this stack contains no elements.
+	 * 
 	 * @return true if this stack contains no elements.
 	 */
 	public boolean isEmpty() {
@@ -73,15 +79,17 @@ public class IntStack {
 
 	/**
 	 * Push value on top of stack
+	 * 
 	 * @param value to push
 	 */
 	public final void push(final int value) {
-		growToHold(stackPointer+1);
+		growToHold(stackPointer + 1);
 		stack[stackPointer++] = value;
 	}
 
 	/**
 	 * Pop value from top of stack
+	 * 
 	 * @return int of value
 	 */
 	public final int pop() {
@@ -95,6 +103,7 @@ public class IntStack {
 
 	/**
 	 * Return the number of elements in stack
+	 * 
 	 * @return int with number of elements
 	 */
 	public final int size() {

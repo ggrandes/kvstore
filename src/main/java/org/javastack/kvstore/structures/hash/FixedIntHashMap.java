@@ -13,6 +13,7 @@
  *
  */
 package org.javastack.kvstore.structures.hash;
+
 import java.util.Arrays;
 import java.util.Random;
 
@@ -21,12 +22,12 @@ import org.javastack.kvstore.utils.GenericFactory;
 import org.javastack.kvstore.utils.PrimeFinder;
 
 /**
- * Native Integer HashMap with Fixed Size (no collision resolver); 
+ * Native Integer HashMap with Fixed Size (no collision resolver);
  * on collision last key/value overwrite old key/value
  * Suitable only for caches
  * 
  * This class is NOT Thread-Safe
- *
+ * 
  * @author Guillermo Grandes / guillermo.grandes[at]gmail.com
  */
 public class FixedIntHashMap<T> {
@@ -45,13 +46,18 @@ public class FixedIntHashMap<T> {
 	private int collisions = 0;
 
 	private int[] newKeyArray(final int size) {
-		if (log.isDebugEnabled()) log.debug(this.getClass().getName() + "::newKeyArray("+size+")");
+		if (log.isDebugEnabled()) {
+			log.debug(this.getClass().getName() + "::newKeyArray(" + size + ")");
+		}
 		final int[] e = new int[size];
 		Arrays.fill(e, Integer.MIN_VALUE);
 		return e;
 	}
+
 	private T[] newElementArray(final int size) {
-		if (log.isDebugEnabled()) log.debug(this.getClass().getName() + "::newElementArray("+size+")");
+		if (log.isDebugEnabled()) {
+			log.debug(this.getClass().getName() + "::newElementArray(" + size + ")");
+		}
 		final T[] e = arrayFactory.newArray(size);
 		Arrays.fill(e, null);
 		return e;
@@ -59,7 +65,7 @@ public class FixedIntHashMap<T> {
 
 	/**
 	 * Constructs a new {@code NativeFixedIntHashMap} instance with the specified capacity.
-	 *
+	 * 
 	 * @param capacity the initial capacity of this hash map.
 	 * @throws IllegalArgumentException when the capacity is less than zero.
 	 */
@@ -78,25 +84,24 @@ public class FixedIntHashMap<T> {
 	}
 
 	private static final int primeSize(final int capacity) {
-		//return java.math.BigInteger.valueOf((long)capacity).nextProbablePrime().intValue();
+		// return java.math.BigInteger.valueOf((long)capacity).nextProbablePrime().intValue();
 		return PrimeFinder.nextPrime(capacity);
 	}
 
 	/**
 	 * Removes all mappings from this hash map, leaving it empty.
-	 *
+	 * 
 	 * @see #isEmpty
 	 * @see #size
 	 */
 	public void clear(boolean shrink) {
-		if (elementCount > 0) {            
-			elementCount = 0;            
+		if (elementCount > 0) {
+			elementCount = 0;
 		}
 		if (shrink && ((elementKeys.length > 1024) && (elementKeys.length > defaultSize))) {
 			elementKeys = newKeyArray(defaultSize);
 			elementValues = newElementArray(defaultSize);
-		}
-		else {
+		} else {
 			Arrays.fill(elementKeys, Integer.MIN_VALUE);
 			Arrays.fill(elementValues, null);
 		}
@@ -106,44 +111,47 @@ public class FixedIntHashMap<T> {
 	public int[] getKeys() {
 		return elementKeys;
 	}
+
 	public T[] getValues() {
 		return elementValues;
 	}
 
 	/**
 	 * Returns a shallow copy of this map.
-	 *
+	 * 
 	 * @return a shallow copy of this map.
 	 */
 	private void computeMaxSize() {
 		threshold = (int) (elementKeys.length * loadFactor);
-		if (log.isDebugEnabled()) log.debug(this.getClass().getName() + "::computeMaxSize()="+threshold + " collisions=" + collisions + " (" + (collisions * 100 / elementKeys.length) + ")");
+		if (log.isDebugEnabled()) {
+			log.debug(this.getClass().getName() + "::computeMaxSize()=" + threshold + " collisions="
+					+ collisions + " (" + (collisions * 100 / elementKeys.length) + ")");
+		}
 		collisions = 0;
 	}
 
 	/**
 	 * Returns the value of the mapping with the specified key.
-	 *
+	 * 
 	 * @param key the key.
-	 * @return the value of the mapping with the specified key, or {@code -1}
-	 *         if no mapping for the specified key is found.
+	 * @return the value of the mapping with the specified key, or {@code -1} if no mapping for the specified
+	 *         key is found.
 	 */
 	public T get(final int key) {
 		int index = ((key & 0x7FFFFFFF) % elementKeys.length);
 
 		long m = elementKeys[index];
-		if (key == m)
+		if (key == m) {
 			return elementValues[index];
+		}
 
 		return null;
 	}
 
-
 	/**
 	 * Returns whether this map is empty.
-	 *
-	 * @return {@code true} if this map has no elements, {@code false}
-	 *         otherwise.
+	 * 
+	 * @return {@code true} if this map has no elements, {@code false} otherwise.
 	 * @see #size()
 	 */
 	public boolean isEmpty() {
@@ -152,11 +160,11 @@ public class FixedIntHashMap<T> {
 
 	/**
 	 * Maps the specified key to the specified value.
-	 *
-	 * @param key   the key.
+	 * 
+	 * @param key the key.
 	 * @param value the value.
-	 * @return the value of any previous mapping with the specified key or
-	 *         {@code -1} if there was no such mapping.
+	 * @return the value of any previous mapping with the specified key or {@code -1} if there was no such
+	 *         mapping.
 	 */
 	public T put(final int key, final T value) {
 		int index = ((key & 0x7FFFFFFF) % elementKeys.length);
@@ -165,8 +173,7 @@ public class FixedIntHashMap<T> {
 		long entry = elementKeys[index];
 		if (entry == Integer.MIN_VALUE) {
 			++elementCount;
-		}
-		else {
+		} else {
 			oldvalue = elementValues[index];
 			collisions++;
 		}
@@ -177,7 +184,7 @@ public class FixedIntHashMap<T> {
 
 	/**
 	 * Removes the mapping with the specified key from this map.
-	 *
+	 * 
 	 * @param key the key of the mapping to remove.
 	 * @return the value of the removed mapping or {@code null} if no mapping
 	 *         for the specified key was found.
@@ -199,7 +206,7 @@ public class FixedIntHashMap<T> {
 
 	/**
 	 * Returns the number of elements in this map.
-	 *
+	 * 
 	 * @return the number of elements in this map.
 	 */
 
@@ -211,15 +218,16 @@ public class FixedIntHashMap<T> {
 		FixedIntHashMap<Long> f = new FixedIntHashMap<Long>(1000000, Long.class);
 		long ts, ts2;
 		Random r = new Random();
-		ts = System.currentTimeMillis(); ts2 = ts;
+		ts = System.currentTimeMillis();
+		ts2 = ts;
 		for (int i = 1; i < 1e3; i++) {
-			f.put(i, (long)(i));
+			f.put(i, (long) (i));
 		}
 		for (int i = 1; i < 1e3; i++) {
 			System.out.println(f.get(i));
 		}
 		for (int i = 1; i < 1; i++) {
-			f.put((int)(r.nextLong() & 0x7FFFFFFFL), r.nextLong() & 0x7FFFFFFFFFFFFFFFL);
+			f.put((int) (r.nextLong() & 0x7FFFFFFFL), r.nextLong() & 0x7FFFFFFFFFFFFFFFL);
 			if (i % 10000 == 0) {
 				System.out.println(i + "\t" + (System.currentTimeMillis() - ts2));
 				ts2 = System.currentTimeMillis();
@@ -227,6 +235,4 @@ public class FixedIntHashMap<T> {
 		}
 		System.out.println("INSERT: " + (System.currentTimeMillis() - ts));
 	}
-
 }
-

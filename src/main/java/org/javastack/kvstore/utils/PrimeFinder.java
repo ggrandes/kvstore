@@ -21,6 +21,7 @@ public final class PrimeFinder {
 	/**
 	 * The prime number list 1-Integer.MAX_VALUE (steps).
 	 */
+	// @formatter:off
 	private static final int[] primeCapacities = { 
 		1, 2, 7, 17, 37, 79,
 		149, 271, 479, 827, 1399, 2309, 3739, 5981, 9391, 14557, 22291,
@@ -31,9 +32,11 @@ public final class PrimeFinder {
 		213832237, 279280621, 363764831, 472551293, 612293659,
 		791381131, 1020370069, 1312518343, 1684445207, 2147483647
 	};
+	// @formatter:on
 	/**
 	 * The prime number list 1-8191 (detailed).
 	 */
+	// @formatter:off
 	private static final short[] primeCapacities8191 = { 
 		1,2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,
 		89,97,101,103,107,109,113,127,131,137,139,149,151,157,163,167,173,
@@ -112,10 +115,10 @@ public final class PrimeFinder {
 		7993,8009,8011,8017,8039,8053,8059,8069,8081,8087,8089,8093,8101,
 		8111,8117,8123,8147,8161,8167,8171,8179,8191
 	};
+	// @formatter:on
 
 	/**
-	 * Returns a prime number which is very close to
-	 * <code>desiredCapacity</code>
+	 * Returns a prime number which is very close to <code>desiredCapacity</code>
 	 * 
 	 * @param desiredCapacity the capacity desired by the user.
 	 * @return the capacity which should be used for a hash.
@@ -124,10 +127,10 @@ public final class PrimeFinder {
 		final int i = Arrays.binarySearch(primeCapacities, desiredCapacity);
 		return primeCapacities[((i < 0) ? ((-i) - 1) : i)];
 	}
+
 	/**
-	 * Returns a prime number which is very close to
-	 * <code>desiredCapacity</code>
-	 * with detailed steps between {1-8191}
+	 * Returns a prime number which is very close to <code>desiredCapacity</code> with detailed steps between
+	 * {1-8191}
 	 * 
 	 * @param desiredCapacity the capacity desired by the user.
 	 * @return the capacity which should be used for a hash.
@@ -136,7 +139,7 @@ public final class PrimeFinder {
 		if (desiredCapacity < 0)
 			return 1;
 		if (desiredCapacity <= 8191) {
-			final int i = Arrays.binarySearch(primeCapacities8191, (short)desiredCapacity);
+			final int i = Arrays.binarySearch(primeCapacities8191, (short) desiredCapacity);
 			return primeCapacities8191[((i < 0) ? ((-i) - 1) : i)];
 		}
 		return nextPrime(desiredCapacity);
