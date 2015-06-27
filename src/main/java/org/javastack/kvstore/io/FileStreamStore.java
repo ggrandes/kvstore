@@ -13,6 +13,7 @@
  *
  */
 package org.javastack.kvstore.io;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -25,7 +26,7 @@ import org.apache.log4j.Logger;
 /**
  * File based Stream Storage
  * This class is Thread-Safe
- *
+ * 
  * @author Guillermo Grandes / guillermo.grandes[at]gmail.com
  */
 public final class FileStreamStore {
@@ -72,7 +73,7 @@ public final class FileStreamStore {
 	 */
 	private long offsetOutputCommited = 0;
 	/**
-	 * Current output offset for blocks (uncommited to disk) 
+	 * Current output offset for blocks (uncommited to disk)
 	 */
 	private long offsetOutputUncommited = 0;
 	/**
@@ -102,6 +103,7 @@ public final class FileStreamStore {
 
 	/**
 	 * Instantiate FileStreamStore
+	 * 
 	 * @param file name of file to open
 	 * @param size for buffer to reduce context switching (minimal is 512bytes, recommended 64KBytes)
 	 */
@@ -111,12 +113,13 @@ public final class FileStreamStore {
 
 	/**
 	 * Instantiate FileStreamStore
+	 * 
 	 * @param file file to open
-	 * @param size for buffer to reduce context switching (minimal is 512bytes) 
+	 * @param size for buffer to reduce context switching (minimal is 512bytes)
 	 */
 	public FileStreamStore(final File file, final int bufferSize) {
 		this.file = file;
-		this.bits = ((int)Math.ceil(Math.log(Math.max(bufferSize, 512))/Math.log(2))); // round to power of 2
+		this.bits = ((int) Math.ceil(Math.log(Math.max(bufferSize, 512)) / Math.log(2))); // round power of 2
 		this.bufInput = ByteBuffer.allocate(512); // default HDD sector size
 		this.bufOutput = ByteBuffer.allocate(1 << bits);
 	}
@@ -125,13 +128,16 @@ public final class FileStreamStore {
 
 	/**
 	 * Open file for read/write
+	 * 
 	 * @return true if valid state
 	 */
 	public boolean open() {
 		return open(false);
 	}
+
 	/**
 	 * Open file
+	 * 
 	 * @param readOnly open in readOnly mode?
 	 * @return true if valid state
 	 */
@@ -139,8 +145,9 @@ public final class FileStreamStore {
 		if (isOpen()) {
 			close();
 		}
-		if (log.isDebugEnabled())
-			log.debug("open("+file+", " + (readOnly ? "r" : "rw") +")");
+		if (log.isDebugEnabled()) {
+			log.debug("open(" + file + ", " + (readOnly ? "r" : "rw") + ")");
+		}
 		try {
 			if (!readOnly) {
 				osOutput = new FileOutputStream(file, true);
@@ -148,13 +155,16 @@ public final class FileStreamStore {
 			}
 			rafInput = new RandomAccessFile(file, "r");
 			fcInput = rafInput.getChannel();
-			if (readOnly)
+			if (readOnly) {
 				fcOutput = fcInput;
+			}
 			offsetOutputUncommited = offsetOutputCommited = fcOutput.size();
-		}
-		catch(Exception e) {
+		} catch (Exception e) {
 			log.error("Exception in open()", e);
-			try { close(); } catch(Exception ign) {}
+			try {
+				close();
+			} catch (Exception ign) {
+			}
 		}
 		validState = isOpen();
 		return validState;
@@ -164,11 +174,25 @@ public final class FileStreamStore {
 	 * Close file
 	 */
 	public synchronized void close() {
-		if (validState) sync();
-		try { fcInput.close(); } catch(Exception ign) {}
-		try { rafInput.close(); } catch(Exception ign) {}
-		try { osOutput.close(); } catch(Exception ign) {}
-		try { fcOutput.close(); } catch(Exception ign) {}
+		if (validState) {
+			sync();
+		}
+		try {
+			fcInput.close();
+		} catch (Exception ign) {
+		}
+		try {
+			rafInput.close();
+		} catch (Exception ign) {
+		}
+		try {
+			osOutput.close();
+		} catch (Exception ign) {
+		}
+		try {
+			fcOutput.close();
+		} catch (Exception ign) {
+		}
 		rafInput = null;
 		fcInput = null;
 		osOutput = null;
@@ -183,11 +207,12 @@ public final class FileStreamStore {
 	 * @return true if file is open
 	 */
 	public synchronized boolean isOpen() {
-		try { 
+		try {
 			if ((fcInput != null) && (fcOutput != null)) {
 				return (fcInput.isOpen() && fcOutput.isOpen());
 			}
-		} catch(Exception ign) {}
+		} catch (Exception ign) {
+		}
 		return false;
 	}
 
@@ -198,8 +223,7 @@ public final class FileStreamStore {
 	public synchronized long size() {
 		try {
 			return (file.length() + bufOutput.position());
-		}
-		catch(Exception e) {
+		} catch (Exception e) {
 			log.error("Exception in size()", e);
 		}
 		return -1;
@@ -207,24 +231,34 @@ public final class FileStreamStore {
 
 	/**
 	 * check if empty
+	 * 
 	 * @return true if empty
 	 */
 	public synchronized boolean isEmpty() {
-		if (!validState) throw new InvalidStateException();
+		if (!validState) {
+			throw new InvalidStateException();
+		}
 		return (size() == 0);
 	}
 
 	/**
 	 * Read end of valid and check last magic footer
+	 * 
 	 * @return true if valid
 	 */
 	public synchronized boolean isValid() {
-		if (!validState) throw new InvalidStateException();
+		if (!validState) {
+			throw new InvalidStateException();
+		}
 		final long size = size();
-		if (size == 0) return true;
+		if (size == 0) {
+			return true;
+		}
 		try {
 			final long offset = (size - FOOTER_LEN);
-			if (offset < 0) return false;
+			if (offset < 0) {
+				return false;
+			}
 			if (offset >= offsetOutputCommited) {
 				if (bufOutput.position() > 0) {
 					log.warn("WARN: autoflush forced");
@@ -240,12 +274,12 @@ public final class FileStreamStore {
 			bufInput.flip();
 			final int footer = bufInput.get(); 	// Footer (byte)
 			if (footer != MAGIC_FOOT) {
-				log.error("MAGIC FOOT fake=" + Integer.toHexString(footer) + " expected=" + Integer.toHexString(MAGIC_FOOT));
+				log.error("MAGIC FOOT fake=" + Integer.toHexString(footer) + " expected="
+						+ Integer.toHexString(MAGIC_FOOT));
 				return false;
 			}
 			return true;
-		}
-		catch(Exception e) {
+		} catch (Exception e) {
 			log.error("Exception in isValid()", e);
 		}
 		return false;
@@ -257,17 +291,19 @@ public final class FileStreamStore {
 	 * Truncate file
 	 */
 	public synchronized void clear() {
-		if (!validState) throw new InvalidStateException();
+		if (!validState) {
+			throw new InvalidStateException();
+		}
 		try {
 			bufOutput.clear();
 			fcOutput.position(0).truncate(0).force(true);
 			offsetOutputUncommited = offsetOutputCommited = fcOutput.position();
-			if (callback != null)
+			if (callback != null) {
 				callback.synched(offsetOutputCommited);
+			}
 			close();
 			open();
-		}
-		catch(Exception e) {
+		} catch (Exception e) {
 			log.error("Exception in clear()", e);
 		}
 	}
@@ -278,34 +314,44 @@ public final class FileStreamStore {
 	public synchronized void delete() {
 		bufOutput.clear();
 		close();
-		try { file.delete(); } catch(Exception ign) {}
+		try {
+			file.delete();
+		} catch (Exception ign) {
+		}
 	}
 
 	// ========= Operations =========
 
 	/**
 	 * set flush buffer on write to true/false, default false
+	 * 
 	 * @param syncOnFlush
 	 */
 	public synchronized void setFlushOnWrite(final boolean flushOnWrite) {
 		this.flushOnWrite = flushOnWrite;
 	}
+
 	/**
 	 * set sync to disk flush buffer to true/false, default true
+	 * 
 	 * @param syncOnFlush
 	 */
 	public synchronized void setSyncOnFlush(final boolean syncOnFlush) {
 		this.syncOnFlush = syncOnFlush;
 	}
+
 	/**
 	 * set align blocks to buffer boundary to true/false, default true
+	 * 
 	 * @param alignBlocks
 	 */
 	public synchronized void setAlignBlocks(final boolean alignBlocks) {
 		this.alignBlocks = alignBlocks;
 	}
+
 	/**
 	 * set callback called when buffers where synched to disk
+	 * 
 	 * @param callback
 	 */
 	public synchronized void setCallback(final CallbackSync callback) {
@@ -314,12 +360,15 @@ public final class FileStreamStore {
 
 	/**
 	 * Read desired block of datalen from end of file
+	 * 
 	 * @param datalen expected
 	 * @param ByteBuffer
 	 * @return new offset (offset+headerlen+datalen+footer)
 	 */
 	public synchronized long readFromEnd(final long datalen, final ByteBuffer buf) {
-		if (!validState) throw new InvalidStateException();
+		if (!validState) {
+			throw new InvalidStateException();
+		}
 		final long size = size();
 		final long offset = (size - HEADER_LEN - datalen - FOOTER_LEN);
 		return read(offset, buf);
@@ -327,12 +376,15 @@ public final class FileStreamStore {
 
 	/**
 	 * Read block from file
+	 * 
 	 * @param offset of block
 	 * @param ByteBuffer
 	 * @return new offset (offset+headerlen+datalen+footer)
 	 */
 	public synchronized long read(long offset, final ByteBuffer buf) {
-		if (!validState) throw new InvalidStateException();
+		if (!validState) {
+			throw new InvalidStateException();
+		}
 		try {
 			int readed;
 			while (true) {
@@ -353,26 +405,27 @@ public final class FileStreamStore {
 				if (alignBlocks && (magicB1 == MAGIC_PADDING)) {
 					final int diffOffset = nextBlockBoundary(offset);
 					if (diffOffset > 0) {
-						//log.info("WARN: skipping " + diffOffset + "bytes to next block-boundary");
+						// log.info("WARN: skipping " + diffOffset + "bytes to next block-boundary");
 						offset += diffOffset;
 						continue;
 					}
 				}
 				final int magic = ((magicB1 << 8) | magicB2);
 				if (magic != MAGIC) {
-					log.error("MAGIC HEADER fake=" + Integer.toHexString(magic) + " expected=" + Integer.toHexString(MAGIC));
+					log.error("MAGIC HEADER fake=" + Integer.toHexString(magic) + " expected="
+							+ Integer.toHexString(MAGIC));
 					return -1;
 				}
 				break;
 			}
 			//
 			final int datalen = bufInput.getInt(); 	// Header - Data Size (int, 4 bytes)
-			final int dataUnderFlow = (datalen - (readed-HEADER_LEN));
+			final int dataUnderFlow = (datalen - (readed - HEADER_LEN));
 			int footer = -12345678;
 			if (dataUnderFlow < 0) {
-				footer = bufInput.get(datalen+HEADER_LEN); 	// Footer (byte)
+				footer = bufInput.get(datalen + HEADER_LEN); 	// Footer (byte)
 			}
-			bufInput.limit(Math.min(readed, datalen+HEADER_LEN));
+			bufInput.limit(Math.min(readed, datalen + HEADER_LEN));
 			buf.put(bufInput);
 			if (dataUnderFlow > 0) {
 				buf.limit(datalen);
@@ -386,20 +439,21 @@ public final class FileStreamStore {
 				// Read Footer (byte)
 				bufInput.clear();
 				bufInput.limit(FOOTER_LEN);
-				if (fcInput.read(bufInput) < FOOTER_LEN)
+				if (fcInput.read(bufInput) < FOOTER_LEN) {
 					return -1;
+				}
 				bufInput.flip();
 				footer = bufInput.get();
 			}
 			if (footer != MAGIC_FOOT) {
-				log.error("MAGIC FOOT fake=" + Integer.toHexString(footer) + " expected=" + Integer.toHexString(MAGIC_FOOT));
+				log.error("MAGIC FOOT fake=" + Integer.toHexString(footer) + " expected="
+						+ Integer.toHexString(MAGIC_FOOT));
 				return -1;
 			}
 			buf.flip();
-			return (offset+HEADER_LEN+datalen+FOOTER_LEN);
-		}
-		catch(Exception e) {
-			log.error("Exception in read("+offset+")", e);
+			return (offset + HEADER_LEN + datalen + FOOTER_LEN);
+		} catch (Exception e) {
+			log.error("Exception in read(" + offset + ")", e);
 		}
 		return -1;
 	}
@@ -412,18 +466,23 @@ public final class FileStreamStore {
 	 * @return long offset where buffer begin was write or -1 if error
 	 */
 	public synchronized long write(final ByteBuffer buf) {
-		if (!validState) throw new InvalidStateException();
+		if (!validState) {
+			throw new InvalidStateException();
+		}
 		final int packet_size = (HEADER_LEN + buf.limit() + FOOTER_LEN); // short + int + data + byte
-		final boolean useDirectIO = (packet_size > (1<<bits));
+		final boolean useDirectIO = (packet_size > (1 << bits));
 		try {
 			if (useDirectIO) {
-				log.warn("WARN: usingDirectIO packet size is greater ("+packet_size+") than file buffer (" + bufOutput.capacity() + ")");
+				log.warn("WARN: usingDirectIO packet size is greater (" + packet_size
+						+ ") than file buffer (" + bufOutput.capacity() + ")");
 			}
 			// Align output
 			if (alignBlocks && !useDirectIO) {
 				final int diffOffset = nextBlockBoundary(offsetOutputUncommited);
 				if (packet_size > diffOffset) {
-					//log.warn("WARN: aligning offset=" + offsetOutputUncommited + " to=" + (offsetOutputUncommited+diffOffset) + " needed=" + packet_size + " allowed=" + diffOffset);
+					// log.warn("WARN: aligning offset=" + offsetOutputUncommited + " to=" +
+					// (offsetOutputUncommited+diffOffset) + " needed=" + packet_size + " allowed=" +
+					// diffOffset);
 					alignBuffer(diffOffset);
 					offsetOutputUncommited += diffOffset;
 				}
@@ -435,12 +494,16 @@ public final class FileStreamStore {
 				flushBuffer();
 			}
 			// Write new data to buffer
-			bufOutput.put((byte)((MAGIC>>8) & 0xFF)); 	// Header - Magic (short, 2 bytes, msb-first)
-			bufOutput.put((byte)(MAGIC & 0xFF)); 		// Header - Magic (short, 2 bytes, lsb-last)
+			bufOutput.put((byte) ((MAGIC >> 8) & 0xFF)); 	// Header - Magic (short, 2 bytes, msb-first)
+			bufOutput.put((byte) (MAGIC & 0xFF)); 		// Header - Magic (short, 2 bytes, lsb-last)
 			bufOutput.putInt(buf.limit()); 				// Header - Data Size (int, 4 bytes)
 			if (useDirectIO) {
 				bufOutput.flip();
-				fcOutput.write(new ByteBuffer[] { bufOutput, buf, ByteBuffer.wrap(new byte[] { MAGIC_FOOT }) }); // Write Header + Data + Footer
+				fcOutput.write(new ByteBuffer[] {
+						bufOutput, buf, ByteBuffer.wrap(new byte[] {
+							MAGIC_FOOT
+						})
+				}); // Write Header + Data + Footer
 				bufOutput.clear();
 				offsetOutputUncommited = offsetOutputCommited = fcOutput.position();
 				if (syncOnFlush) {
@@ -448,19 +511,18 @@ public final class FileStreamStore {
 					if (callback != null)
 						callback.synched(offsetOutputCommited);
 				}
-			}
-			else {
+			} else {
 				bufOutput.put(buf); // Data Body
 				bufOutput.put(MAGIC_FOOT); // Footer
 				// Increment offset of buffered data (header + user-data)
 				offsetOutputUncommited += packet_size;
-				if (flushOnWrite)
+				if (flushOnWrite) {
 					flushBuffer();
+				}
 			}
 			//
 			return offset;
-		}
-		catch(Exception e) {
+		} catch (Exception e) {
 			log.error("Exception in write()", e);
 		}
 		return -1L;
@@ -468,15 +530,17 @@ public final class FileStreamStore {
 
 	/**
 	 * How much bytes left to next block boundary
+	 * 
 	 * @param offset
 	 * @return bytes left
 	 */
 	private final int nextBlockBoundary(final long offset) {
-		return (int)((((offset >> bits) + 1) << bits) - offset);
+		return (int) ((((offset >> bits) + 1) << bits) - offset);
 	}
 
 	/**
 	 * Pad output buffer with NULL to complete alignment
+	 * 
 	 * @param diff bytes
 	 * @throws IOException
 	 */
@@ -486,34 +550,36 @@ public final class FileStreamStore {
 		}
 		bufOutput.put(MAGIC_PADDING); // Magic for Padding
 		int i = 1;
-		for (; i+8 <= diff; i+=8) {
+		for (; i + 8 <= diff; i += 8) {
 			bufOutput.putLong(0L);
 		}
-		for (; i+4 <= diff; i+=4) {
+		for (; i + 4 <= diff; i += 4) {
 			bufOutput.putInt(0);
 		}
-		switch(diff-i) {
-		case 3: 
-			bufOutput.put((byte)0);
-		case 2: 
-			bufOutput.putShort((short)0);
-			break;
-		case 1: 
-			bufOutput.put((byte)0);
+		switch (diff - i) {
+			case 3:
+				bufOutput.put((byte) 0);
+			case 2:
+				bufOutput.putShort((short) 0);
+				break;
+			case 1:
+				bufOutput.put((byte) 0);
 		}
 	}
 
 	/**
 	 * Flush buffer to file
-	 * @return false if exception occur 
+	 * 
+	 * @return false if exception occur
 	 */
 	public synchronized boolean flush() {
-		if (!validState) throw new InvalidStateException();
-		try { 
+		if (!validState) {
+			throw new InvalidStateException();
+		}
+		try {
 			flushBuffer();
 			return true;
-		}
-		catch(Exception e) {
+		} catch (Exception e) {
 			log.error("Exception in flush()", e);
 		}
 		return false;
@@ -521,6 +587,7 @@ public final class FileStreamStore {
 
 	/**
 	 * Write uncommited data to disk
+	 * 
 	 * @throws IOException
 	 */
 	private final void flushBuffer() throws IOException {
@@ -528,32 +595,37 @@ public final class FileStreamStore {
 			bufOutput.flip();
 			fcOutput.write(bufOutput);
 			bufOutput.clear();
-			//log.debug("offsetOutputUncommited=" + offsetOutputUncommited + " offsetOutputCommited=" + offsetOutputCommited + " fcOutput.position()=" + fcOutput.position());
+			// log.debug("offsetOutputUncommited=" + offsetOutputUncommited + " offsetOutputCommited=" +
+			// offsetOutputCommited + " fcOutput.position()=" + fcOutput.position());
 			offsetOutputUncommited = offsetOutputCommited = fcOutput.position();
 			if (syncOnFlush) {
 				fcOutput.force(false);
-				if (callback != null)
+				if (callback != null) {
 					callback.synched(offsetOutputCommited);
+				}
 			}
 		}
 	}
 
 	/**
 	 * Forces any updates to this file to be written to the storage device that contains it.
-	 * @return false if exception occur 
+	 * 
+	 * @return false if exception occur
 	 */
 	public synchronized boolean sync() {
-		if (!validState) throw new InvalidStateException();
-		try { 
+		if (!validState) {
+			throw new InvalidStateException();
+		}
+		try {
 			flushBuffer();
 			if (!syncOnFlush) {
 				fcOutput.force(false);
-				if (callback != null)
+				if (callback != null) {
 					callback.synched(offsetOutputCommited);
+				}
 			}
 			return true;
-		}
-		catch(Exception e) {
+		} catch (Exception e) {
 			log.error("Exception in sync()", e);
 		}
 		return false;
@@ -566,12 +638,11 @@ public final class FileStreamStore {
 	// ========= Exceptions =========
 
 	/**
-	 * Exception throwed when store is in invalid state (closed) 
+	 * Exception throwed when store is in invalid state (closed)
 	 */
 	public static class InvalidStateException extends RuntimeException {
 		private static final long serialVersionUID = 42L;
 	}
 
 	// ========= END =========
-
 }

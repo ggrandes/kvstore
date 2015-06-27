@@ -13,6 +13,7 @@
  *
  */
 package org.javastack.kvstore.io;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -31,9 +32,9 @@ import org.javastack.kvstore.structures.hash.IntHashMap;
 import org.javastack.kvstore.utils.Check64bitsJVM;
 
 /**
- * File based Storage of fixed size blocks 
+ * File based Storage of fixed size blocks
  * This class is NOT Thread-Safe
- *
+ * 
  * @author Guillermo Grandes / guillermo.grandes[at]gmail.com
  */
 public class FileBlockStore {
@@ -81,6 +82,7 @@ public class FileBlockStore {
 
 	/**
 	 * Instantiate FileBlockStore
+	 * 
 	 * @param file name of file to open
 	 * @param blockSize size of block
 	 * @param isDirect use DirectByteBuffer or HeapByteBuffer?
@@ -91,6 +93,7 @@ public class FileBlockStore {
 
 	/**
 	 * Instantiate FileBlockStore
+	 * 
 	 * @param file file to open
 	 * @param blockSize size of block
 	 * @param isDirect use DirectByteBuffer or HeapByteBuffer?
@@ -105,13 +108,16 @@ public class FileBlockStore {
 
 	/**
 	 * Open file for read/write
+	 * 
 	 * @return true if valid state
 	 */
 	public boolean open() {
 		return open(false);
 	}
+
 	/**
 	 * Open file
+	 * 
 	 * @param readOnly open for readOnly?
 	 * @return true if valid state
 	 */
@@ -119,19 +125,29 @@ public class FileBlockStore {
 		if (isOpen()) {
 			close();
 		}
-		if (log.isDebugEnabled())
-			log.debug("open("+file+")");
+		if (log.isDebugEnabled()) {
+			log.debug("open(" + file + ")");
+		}
 		try {
 			raf = new RandomAccessFile(file, readOnly ? "r" : "rw");
 			fileChannel = raf.getChannel();
-			if (useLock)
+			if (useLock) {
 				lock(readOnly);
-		}
-		catch(Exception e) {
+			}
+		} catch (Exception e) {
 			log.error("Exception in open()", e);
-			try { unlock(); } catch(Exception ign) {}
-			try { fileChannel.close(); } catch(Exception ign) {}
-			try { raf.close(); } catch(Exception ign) {}
+			try {
+				unlock();
+			} catch (Exception ign) {
+			}
+			try {
+				fileChannel.close();
+			} catch (Exception ign) {
+			}
+			try {
+				raf.close();
+			} catch (Exception ign) {
+			}
 			raf = null;
 			fileChannel = null;
 		}
@@ -144,9 +160,18 @@ public class FileBlockStore {
 	 */
 	public void close() {
 		mmaps.clear(false);
-		try { unlock(); } catch(Exception ign) {}
-		try { fileChannel.close(); } catch(Exception ign) {}
-		try { raf.close(); } catch(Exception ign) {}
+		try {
+			unlock();
+		} catch (Exception ign) {
+		}
+		try {
+			fileChannel.close();
+		} catch (Exception ign) {
+		}
+		try {
+			raf.close();
+		} catch (Exception ign) {
+		}
 		fileChannel = null;
 		raf = null;
 		validState = false;
@@ -156,7 +181,8 @@ public class FileBlockStore {
 
 	/**
 	 * Lock file
-	 * @throws IOException 
+	 * 
+	 * @throws IOException
 	 */
 	public boolean lock(final boolean readOnly) throws IOException {
 		if (isOpen() && lock == null) {
@@ -168,7 +194,8 @@ public class FileBlockStore {
 
 	/**
 	 * Unlock file
-	 * @throws IOException 
+	 * 
+	 * @throws IOException
 	 */
 	public boolean unlock() throws IOException {
 		if (lock != null) {
@@ -178,7 +205,7 @@ public class FileBlockStore {
 		}
 		return false;
 	}
-	
+
 	// ========= Info =========
 
 	/**
@@ -192,9 +219,12 @@ public class FileBlockStore {
 	 * @return true if file is open
 	 */
 	public boolean isOpen() {
-		try { 
-			if (fileChannel != null) return fileChannel.isOpen();
-		} catch(Exception ign) {}
+		try {
+			if (fileChannel != null) {
+				return fileChannel.isOpen();
+			}
+		} catch (Exception ign) {
+		}
 		return false;
 	}
 
@@ -206,11 +236,11 @@ public class FileBlockStore {
 		try {
 			final long len = file.length();
 			final long num_blocks = ((len / blockSize) + (((len % blockSize) == 0) ? 0 : 1));
-			if (log.isDebugEnabled())
+			if (log.isDebugEnabled()) {
 				log.debug("size()=" + num_blocks);
+			}
 			return (int) num_blocks;
-		}
-		catch(Exception e) {
+		} catch (Exception e) {
 			log.error("Exception in sizeInBlocks()", e);
 		}
 		return -1;
@@ -222,12 +252,13 @@ public class FileBlockStore {
 	 * Truncate file
 	 */
 	public void clear() {
-		if (!validState) throw new InvalidStateException();
+		if (!validState) {
+			throw new InvalidStateException();
+		}
 		try {
 			fileChannel.position(0).truncate(0);
 			sync();
-		}
-		catch(Exception e) {
+		} catch (Exception e) {
 			log.error("Exception in clear()", e);
 		}
 	}
@@ -237,13 +268,17 @@ public class FileBlockStore {
 	 */
 	public void delete() {
 		close();
-		try { file.delete(); } catch(Exception ign) {}
+		try {
+			file.delete();
+		} catch (Exception ign) {
+		}
 	}
 
 	// ========= Operations =========
 
 	/**
 	 * set callback called when buffers where synched to disk
+	 * 
 	 * @param callback
 	 */
 	public void setCallback(final CallbackSync callback) {
@@ -252,13 +287,17 @@ public class FileBlockStore {
 
 	/**
 	 * Read block from file
+	 * 
 	 * @param index of block
 	 * @return ByteBuffer from pool with data
 	 */
 	public ByteBuffer get(final int index) {
-		if (!validState) throw new InvalidStateException();
-		if (log.isDebugEnabled())
-			log.debug("get("+index+")");
+		if (!validState) {
+			throw new InvalidStateException();
+		}
+		if (log.isDebugEnabled()) {
+			log.debug("get(" + index + ")");
+		}
 		try {
 			if (useMmap) {
 				final MappedByteBuffer mbb = getMmapForIndex(index);
@@ -271,26 +310,29 @@ public class FileBlockStore {
 			fileChannel.position(index * blockSize).read(buf);
 			buf.rewind();
 			return buf;
-		}
-		catch(Exception e) {
-			log.error("Exception in get("+index+")", e);
+		} catch (Exception e) {
+			log.error("Exception in get(" + index + ")", e);
 		}
 		return null;
 	}
 
 	/**
 	 * Write from buf to file
+	 * 
 	 * @param index of block
 	 * @param buf ByteBuffer to write
 	 * @return true if write is OK
 	 */
 	public boolean set(final int index, final ByteBuffer buf) {
-		if (!validState) throw new InvalidStateException();
-		if (log.isDebugEnabled())
-			log.debug("set("+index+","+buf+")");
+		if (!validState) {
+			throw new InvalidStateException();
+		}
+		if (log.isDebugEnabled()) {
+			log.debug("set(" + index + "," + buf + ")");
+		}
 		try {
 			if (buf.limit() > blockSize) {
-				log.error("ERROR: buffer.capacity="+buf.limit()+" > blocksize=" + blockSize);
+				log.error("ERROR: buffer.capacity=" + buf.limit() + " > blocksize=" + blockSize);
 			}
 			if (useMmap) {
 				final MappedByteBuffer mbb = getMmapForIndex(index);
@@ -302,15 +344,15 @@ public class FileBlockStore {
 			}
 			fileChannel.position(index * blockSize).write(buf);
 			return true;
-		}
-		catch(Exception e) {
-			log.error("Exception in set("+index+")", e);
+		} catch (Exception e) {
+			log.error("Exception in set(" + index + ")", e);
 		}
 		return false;
 	}
 
 	/**
 	 * Alloc a WriteBuffer
+	 * 
 	 * @param index of block
 	 * @return WriteBuffer
 	 */
@@ -323,28 +365,37 @@ public class FileBlockStore {
 		}
 		return new WriteBuffer(this, index, false, bufstack.pop());
 	}
+
 	/**
 	 * Release Read ByteBuffer
+	 * 
 	 * @param buf readed ByteBuffer
 	 */
 	public void release(final ByteBuffer buf) {
-		if (!useMmap)
+		if (!useMmap) {
 			bufstack.push(buf);
+		}
 	}
-	
+
 	/**
-	 * Forces any updates to this file to be written to the storage device that contains it. 
+	 * Forces any updates to this file to be written to the storage device that contains it.
 	 */
 	public void sync() {
-		if (!validState) throw new InvalidStateException();
+		if (!validState) {
+			throw new InvalidStateException();
+		}
 		if (useMmap) {
 			syncAllMmaps();
 		}
 		if (fileChannel != null) {
-			try { fileChannel.force(false); } catch(Exception ign) {}
+			try {
+				fileChannel.force(false);
+			} catch (Exception ign) {
+			}
 		}
-		if (callback != null)
+		if (callback != null) {
 			callback.synched();
+		}
 	}
 
 	public static interface CallbackSync {
@@ -356,68 +407,85 @@ public class FileBlockStore {
 		private final int index;
 		private final boolean mmaped;
 		private ByteBuffer buf;
-		private WriteBuffer(final FileBlockStore storage, final int index, final boolean mmaped, final ByteBuffer buf) {
+
+		private WriteBuffer(final FileBlockStore storage, final int index, final boolean mmaped,
+				final ByteBuffer buf) {
 			this.storage = storage;
 			this.index = index;
 			this.mmaped = mmaped;
 			this.buf = buf;
 		}
+
 		public ByteBuffer buf() {
 			return buf;
 		}
+
 		/**
 		 * Save and release the buffer
+		 * 
 		 * @return successful operation?
 		 */
 		public boolean save() {
-			if (mmaped)
+			if (mmaped) {
 				return true;
+			}
 			final boolean ret = storage.set(index, buf);
 			storage.release(buf);
 			buf = null;
 			return ret;
 		}
 	}
-	
+
 	// ========= Mmap ===============
 
 	private static final boolean useSegments = true;
 	private static final int segmentSize = (32 * 4096); // N_PAGES * PAGE=4KB // 128KB
 	@SuppressWarnings("rawtypes")
-	private final IntHashMap<BufferReference> mmaps = new IntHashMap<BufferReference>(128, BufferReference.class);
+	private final IntHashMap<BufferReference> mmaps = new IntHashMap<BufferReference>(128,
+			BufferReference.class);
 	/**
 	 * Comparator for write by Idx
 	 */
 	private Comparator<BufferReference<MappedByteBuffer>> comparatorByIdx = new Comparator<BufferReference<MappedByteBuffer>>() {
 		@Override
-		public int compare(final BufferReference<MappedByteBuffer> o1, final BufferReference<MappedByteBuffer> o2) {
+		public int compare(final BufferReference<MappedByteBuffer> o1,
+				final BufferReference<MappedByteBuffer> o2) {
 			if (o1 == null) {
-				if (o2 == null) return 0; // o1 == null & o2 == null
+				if (o2 == null) {
+					return 0; // o1 == null & o2 == null
+				}
 				return 1; // o1 == null & o2 != null
 			}
-			if (o2 == null) return -1; // o1 != null & o2 == null
+			if (o2 == null) {
+				return -1; // o1 != null & o2 == null
+			}
 			final int thisVal = (o1.idx < 0 ? -o1.idx : o1.idx);
 			final int anotherVal = (o2.idx < 0 ? -o2.idx : o2.idx);
-			return ((thisVal<anotherVal) ? -1 : ((thisVal==anotherVal) ? 0 : 1));
+			return ((thisVal < anotherVal) ? -1 : ((thisVal == anotherVal) ? 0 : 1));
 		}
 	};
 
 	/**
 	 * Is enabled mmap for this store?
+	 * 
 	 * @return true/false
 	 */
 	public boolean useMmap() {
 		return useMmap;
 	}
+
 	/**
 	 * Enable mmap of files (default is not enabled), call before use {@link #open()}
 	 * <p/>
 	 * Recommended use of: {@link #enableMmapIfSupported()}
 	 * <p/>
-	 * <b>NOTE:</b> 32bit JVM can only address 2GB of memory, enable mmap can throw <b>java.lang.OutOfMemoryError: Map failed</b> exceptions
+	 * <b>NOTE:</b> 32bit JVM can only address 2GB of memory, enable mmap can throw
+	 * <b>java.lang.OutOfMemoryError: Map failed</b> exceptions
 	 */
 	public void enableMmap() {
-		if (validState) throw new InvalidStateException();
+		if (validState) {
+			throw new InvalidStateException();
+		}
 		if (Check64bitsJVM.JVMis64bits()) {
 			log.info("Enabled mmap on 64bits JVM");
 		} else {
@@ -425,11 +493,14 @@ public class FileBlockStore {
 		}
 		useMmap = true;
 	}
+
 	/**
 	 * Enable mmap of files (default is not enabled) if JVM is 64bits, call before use {@link #open()}
 	 */
 	public void enableMmapIfSupported() {
-		if (validState) throw new InvalidStateException();
+		if (validState) {
+			throw new InvalidStateException();
+		}
 		useMmap = Check64bitsJVM.JVMis64bits();
 		if (useMmap) {
 			log.info("Enabled mmap on 64bits JVM");
@@ -437,11 +508,14 @@ public class FileBlockStore {
 			log.info("Disabled mmap on 32bits JVM");
 		}
 	}
+
 	/**
 	 * Enable Lock of files (default is not enabled), call before use {@link #open()}
 	 */
 	public void enableLocking() {
-		if (validState) throw new InvalidStateException();
+		if (validState) {
+			throw new InvalidStateException();
+		}
 		if (Boolean.getBoolean(Constants.PROP_IO_LOCKING)) {
 			useLock = false;
 			log.info("Disabled Locking in System Property (" + Constants.PROP_IO_LOCKING + ")");
@@ -452,14 +526,17 @@ public class FileBlockStore {
 	}
 
 	private final int addressIndexToSegment(final int index) {
-		return (int)(((long)index * blockSize) / segmentSize);
+		return (int) (((long) index * blockSize) / segmentSize);
 	}
+
 	private final int addressIndexToSegmentOffset(final int index) {
 		return (index % (segmentSize / blockSize));
 	}
 
 	public final MappedByteBuffer getMmapForIndex(final int index) {
-		if (!validState) throw new InvalidStateException();
+		if (!validState) {
+			throw new InvalidStateException();
+		}
 		final int mapIdx = (useSegments ? addressIndexToSegment(index) : index);
 		final int mapSize = (useSegments ? segmentSize : blockSize);
 		try {
@@ -470,25 +547,26 @@ public class FileBlockStore {
 				mbb = bref.get();
 			}
 			if (mbb == null) { // Create mmap
-				final long mapOffset = ((long)mapIdx * mapSize);
+				final long mapOffset = ((long) mapIdx * mapSize);
 				mbb = fileChannel.map(FileChannel.MapMode.READ_WRITE, mapOffset, mapSize);
-				//mbb.load();
+				// mbb.load();
 				mmaps.put(mapIdx, new BufferReference<MappedByteBuffer>(mapIdx, mbb));
-				//log.info("Mapped index=" + index + " to offset=" + mapOffset + " size=" + mapSize);
+				// log.info("Mapped index=" + index + " to offset=" + mapOffset + " size=" + mapSize);
 			} else {
 				mbb.clear();
 			}
 			if (useSegments) { // slice segment
 				final int sliceBegin = (addressIndexToSegmentOffset(index) * blockSize);
 				final int sliceEnd = (sliceBegin + blockSize);
-				//log.info("Mapping segment=" + mapIdx + " index=" + index + " sliceBegin=" + sliceBegin + " sliceEnd=" + sliceEnd);
+				// log.info("Mapping segment=" + mapIdx + " index=" + index + " sliceBegin=" + sliceBegin +
+				// " sliceEnd=" + sliceEnd);
 				mbb.limit(sliceEnd);
 				mbb.position(sliceBegin);
 				mbb = (MappedByteBuffer) mbb.slice();
 			}
 			return mbb;
 		} catch (IOException e) {
-			log.error("IOException in getMmapForIndex("+index+")", e);
+			log.error("IOException in getMmapForIndex(" + index + ")", e);
 		}
 		return null;
 	}
@@ -498,16 +576,22 @@ public class FileBlockStore {
 		final BufferReference<MappedByteBuffer>[] maps = mmaps.getValues();
 		Arrays.sort(maps, comparatorByIdx);
 		for (final Reference<MappedByteBuffer> ref : maps) {
-			if (ref == null) break;
+			if (ref == null) {
+				break;
+			}
 			final MappedByteBuffer mbb = ref.get();
 			if (mbb != null) {
-				try { mbb.force(); } catch(Exception ign) {}
+				try {
+					mbb.force();
+				} catch (Exception ign) {
+				}
 			}
 		}
 	}
 
 	static class BufferReference<T extends MappedByteBuffer> extends SoftReference<T> {
 		final int idx;
+
 		public BufferReference(final int idx, final T referent) {
 			super(referent);
 			this.idx = idx;
@@ -517,7 +601,7 @@ public class FileBlockStore {
 	// ========= Exceptions =========
 
 	/**
-	 * Exception throwed when store is in invalid state (closed) 
+	 * Exception throwed when store is in invalid state (closed)
 	 */
 	public static class InvalidStateException extends RuntimeException {
 		private static final long serialVersionUID = 42L;

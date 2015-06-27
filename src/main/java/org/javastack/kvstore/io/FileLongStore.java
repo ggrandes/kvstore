@@ -25,7 +25,7 @@ import org.apache.log4j.Logger;
 /**
  * File for store one Long value with history for crash recovery
  * This class is Thread-Safe
- *
+ * 
  * @author Guillermo Grandes / guillermo.grandes[at]gmail.com
  */
 public class FileLongStore {
@@ -57,6 +57,7 @@ public class FileLongStore {
 
 	/**
 	 * Instantiate FileLongPointerStore
+	 * 
 	 * @param file name of file to open
 	 */
 	public FileLongStore(final String file) {
@@ -65,6 +66,7 @@ public class FileLongStore {
 
 	/**
 	 * Instantiate FileLongPointerStore
+	 * 
 	 * @param file file to open
 	 */
 	public FileLongStore(final File file) {
@@ -75,13 +77,16 @@ public class FileLongStore {
 
 	/**
 	 * Open file for read/write
+	 * 
 	 * @return true if valid state
 	 */
 	public boolean open() {
 		return open(false);
 	}
+
 	/**
 	 * Open file
+	 * 
 	 * @param readOnly open in readOnly mode?
 	 * @return true if valid state
 	 */
@@ -92,10 +97,12 @@ public class FileLongStore {
 		try {
 			raf = new RandomAccessFile(file, readOnly ? "r" : "rw");
 			fc = raf.getChannel();
-		}
-		catch(Exception e) {
+		} catch (Exception e) {
 			log.error("Exception in open()", e);
-			try { close(); } catch(Exception ign) {}
+			try {
+				close();
+			} catch (Exception ign) {
+			}
 		}
 		validState = isOpen();
 		return validState;
@@ -105,9 +112,17 @@ public class FileLongStore {
 	 * Close file
 	 */
 	public synchronized void close() {
-		if (validState) sync();
-		try { fc.close(); } catch(Exception ign) {}
-		try { raf.close(); } catch(Exception ign) {}
+		if (validState) {
+			sync();
+		}
+		try {
+			fc.close();
+		} catch (Exception ign) {
+		}
+		try {
+			raf.close();
+		} catch (Exception ign) {
+		}
 		raf = null;
 		fc = null;
 		//
@@ -120,21 +135,25 @@ public class FileLongStore {
 	 * @return true if file is open
 	 */
 	public synchronized boolean isOpen() {
-		try { 
+		try {
 			if (fc != null) {
 				return fc.isOpen();
 			}
-		} catch(Exception ign) {}
+		} catch (Exception ign) {
+		}
 		return false;
 	}
 
 	/**
 	 * Read value from file
-	 * @throws IOException 
+	 * 
+	 * @throws IOException
 	 */
 	public synchronized boolean canRead() throws IOException {
-		if (!validState) throw new InvalidStateException();
-		final long offset = ((fc.size() & ~7) -8);
+		if (!validState) {
+			throw new InvalidStateException();
+		}
+		final long offset = ((fc.size() & ~7) - 8);
 		return (offset >= 0);
 	}
 
@@ -145,8 +164,7 @@ public class FileLongStore {
 	public synchronized long size() {
 		try {
 			return file.length();
-		}
-		catch(Exception e) {
+		} catch (Exception e) {
 			log.error("Exception in size()", e);
 		}
 		return -1;
@@ -158,14 +176,15 @@ public class FileLongStore {
 	 * Truncate file
 	 */
 	public synchronized void clear() {
-		if (!validState) throw new InvalidStateException();
+		if (!validState) {
+			throw new InvalidStateException();
+		}
 		try {
 			buf.clear();
 			fc.position(0).truncate(0).force(true);
 			close();
 			open();
-		}
-		catch(Exception e) {
+		} catch (Exception e) {
 			log.error("Exception in clear()", e);
 		}
 	}
@@ -176,7 +195,10 @@ public class FileLongStore {
 	public synchronized void delete() {
 		buf.clear();
 		close();
-		try { file.delete(); } catch(Exception ign) {}
+		try {
+			file.delete();
+		} catch (Exception ign) {
+		}
 	}
 
 	// ========= Operations =========
@@ -187,6 +209,7 @@ public class FileLongStore {
 	public synchronized void set(final long value) {
 		this.value = value;
 	}
+
 	/**
 	 * Get value
 	 */
@@ -196,13 +219,17 @@ public class FileLongStore {
 
 	/**
 	 * Read value from file
-	 * @throws IOException 
+	 * 
+	 * @throws IOException
 	 */
 	public synchronized void read() throws IOException {
-		if (!validState) throw new InvalidStateException();
-		final long offset = ((fc.size() & ~7) -8);
-		if (offset < 0)
+		if (!validState) {
+			throw new InvalidStateException();
+		}
+		final long offset = ((fc.size() & ~7) - 8);
+		if (offset < 0) {
 			throw new IOException("Empty file");
+		}
 		buf.clear();
 		int readed = fc.position(offset).read(buf);
 		if (readed < 8) { // long 8 bytes
@@ -214,7 +241,8 @@ public class FileLongStore {
 
 	/**
 	 * Write value to file
-	 * @throws IOException 
+	 * 
+	 * @throws IOException
 	 */
 	public void write() throws IOException {
 		write(false);
@@ -222,25 +250,32 @@ public class FileLongStore {
 
 	/**
 	 * Write value to file
+	 * 
 	 * @param forceSync if true data must be synced to disk
-	 * @throws IOException 
+	 * @throws IOException
 	 */
 	public synchronized void write(final boolean forceSync) throws IOException {
-		if (!validState) throw new InvalidStateException();
+		if (!validState) {
+			throw new InvalidStateException();
+		}
 		buf.clear();
 		buf.putLong(value);
 		buf.flip();
 		fc.position(fc.size()).write(buf); // go end and write
-		if (forceSync)
+		if (forceSync) {
 			fc.force(false);
+		}
 	}
 
 	/**
 	 * Write value to file and reduce size to minimal
-	 * @throws IOException 
+	 * 
+	 * @throws IOException
 	 */
 	public synchronized void pack() throws IOException {
-		if (!validState) throw new InvalidStateException();
+		if (!validState) {
+			throw new InvalidStateException();
+		}
 		buf.clear();
 		buf.putLong(value);
 		buf.flip();
@@ -250,15 +285,17 @@ public class FileLongStore {
 
 	/**
 	 * Forces any updates to this file to be written to the storage device that contains it.
-	 * @return false if exception occur 
+	 * 
+	 * @return false if exception occur
 	 */
 	public synchronized boolean sync() {
-		if (!validState) throw new InvalidStateException();
-		try { 
+		if (!validState) {
+			throw new InvalidStateException();
+		}
+		try {
 			fc.force(false);
 			return true;
-		}
-		catch(Exception e) {
+		} catch (Exception e) {
 			log.error("Exception in sync()", e);
 		}
 		return false;
@@ -267,12 +304,11 @@ public class FileLongStore {
 	// ========= Exceptions =========
 
 	/**
-	 * Exception throwed when store is in invalid state (closed) 
+	 * Exception throwed when store is in invalid state (closed)
 	 */
 	public static class InvalidStateException extends RuntimeException {
 		private static final long serialVersionUID = 42L;
 	}
 
 	// ========= END =========
-
 }

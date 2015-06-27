@@ -19,11 +19,12 @@ import java.nio.charset.Charset;
 
 /**
  * String Serializer (ByteBuffer)
- *
+ * 
  * @author Guillermo Grandes / guillermo.grandes[at]gmail.com
  */
 public class StringSerializer {
 	private static final Charset cs = Charset.forName("UTF-8");
+
 	public static final void fromStringToBuffer(final ByteBuffer out, final String str) {
 		if (str == null) {
 			out.putInt(Integer.MIN_VALUE);
@@ -34,6 +35,7 @@ public class StringSerializer {
 		out.putInt(len);
 		out.put(bytes, 0, len);
 	}
+
 	public static final String fromBufferToString(final ByteBuffer in) {
 		final int len = in.getInt();
 		if (len == Integer.MIN_VALUE) {
