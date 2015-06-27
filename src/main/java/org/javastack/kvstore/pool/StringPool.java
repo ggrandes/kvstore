@@ -34,12 +34,15 @@ public class StringPool {
 		ws.put(str);
 		return str;
 	}
+
 	public static final synchronized int size() {
 		return ws.size();
 	}
+
 	public static final synchronized void clear() {
 		ws.clear();
 	}
+
 	public static final synchronized String get(final String str) {
 		return ws.get(str);
 	}

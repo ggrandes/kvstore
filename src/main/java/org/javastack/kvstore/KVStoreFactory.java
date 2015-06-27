@@ -22,7 +22,7 @@ import org.javastack.kvstore.structures.btree.BplusTreeMemory;
 
 public class KVStoreFactory<K extends DataHolder<K>, V extends DataHolder<V>> {
 	private static final Logger log = Logger.getLogger(KVStoreFactory.class);
-	//
+
 	public static final String FILENAME = "opt.kvstore.persistence.string.filename"; // String
 	public static final String CACHE_SIZE = "opt.kvstore.persistence.int.cachesize"; // int
 	public static final String AUTO_TUNE = "opt.kvstore.persistence.boolean.autotune"; // Boolean
@@ -36,16 +36,17 @@ public class KVStoreFactory<K extends DataHolder<K>, V extends DataHolder<V>> {
 	public static final String ENABLE_LOCKING = "opt.kvstore.persistence.boolean.enablelocking"; // Boolean
 
 	public static final String B_SIZE = "opt.kvstore.btree.int.bsize"; // int
-	//
+
 	final Class<K> typeK;
 	final Class<V> typeV;
-	//
+
 	public KVStoreFactory(final Class<K> typeK, final Class<V> typeV) {
 		this.typeK = typeK;
 		this.typeV = typeV;
 	}
-	//
-	public BplusTree<K, V> createTree(final Options opts) throws InstantiationException, IllegalAccessException {
+
+	public BplusTree<K, V> createTree(final Options opts) throws InstantiationException,
+			IllegalAccessException {
 		final String fileName = opts.getString(FILENAME);
 		if (fileName == null) {
 			return createTreeMemory(opts);
@@ -53,11 +54,15 @@ public class KVStoreFactory<K extends DataHolder<K>, V extends DataHolder<V>> {
 			return createTreeFile(opts);
 		}
 	}
-	public BplusTreeMemory<K, V> createTreeMemory(final Options opts) throws InstantiationException, IllegalAccessException {
+
+	public BplusTreeMemory<K, V> createTreeMemory(final Options opts) throws InstantiationException,
+			IllegalAccessException {
 		final int b_size = opts.getInt(B_SIZE, 512);
 		return new BplusTreeMemory<K, V>(b_size, typeK, typeV);
 	}
-	public BplusTreeFile<K, V> createTreeFile(final Options opts) throws InstantiationException, IllegalAccessException {
+
+	public BplusTreeFile<K, V> createTreeFile(final Options opts) throws InstantiationException,
+			IllegalAccessException {
 		final String fileName = opts.getString(FILENAME);
 		if (fileName == null) {
 			log.error("Invalid filename for createTreeFile");
@@ -84,38 +89,47 @@ public class KVStoreFactory<K extends DataHolder<K>, V extends DataHolder<V>> {
 		//
 		return tree;
 	}
+
 	//
 	public Options createTreeOptionsDefault() {
 		final Options opts = new Options();
+		// @formatter:off
 		opts
 		.set(AUTO_TUNE, true)
 		.set(B_SIZE, 512)
 		.set(USE_REDO, true)
 		.set(USE_REDO_THREAD, false)
 		.set(ENABLE_LOCKING, true)
-		.set(CACHE_SIZE, 8*1024*1024);
+		.set(CACHE_SIZE, 8 * 1024 * 1024);
+		// @formatter:on
 		return opts;
 	}
+
 	public Options createTreeOptionsSafe() {
 		final Options opts = new Options();
+		// @formatter:off
 		opts
 		.set(AUTO_TUNE, true)
 		.set(B_SIZE, 512)
 		.set(USE_REDO, true)
 		.set(USE_REDO_THREAD, false)
 		.set(ENABLE_LOCKING, true)
-		.set(CACHE_SIZE, 1*1024*1024);
+		.set(CACHE_SIZE, 1 * 1024 * 1024);
+		// @formatter:on
 		return opts;
 	}
+
 	public Options createTreeOptionsPerformance() {
 		final Options opts = new Options();
+		// @formatter:off
 		opts
 		.set(AUTO_TUNE, true)
 		.set(B_SIZE, 1024)
 		.set(USE_REDO, false)
 		.set(USE_REDO_THREAD, false)
 		.set(DISABLE_AUTOSYNC_STORE, true)
-		.set(CACHE_SIZE, 128*1024*1024);
+		.set(CACHE_SIZE, 128 * 1024 * 1024);
+		// @formatter:on
 		return opts;
 	}
 }
