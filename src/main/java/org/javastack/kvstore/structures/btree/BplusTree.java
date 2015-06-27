@@ -1123,6 +1123,10 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 	 */
 	static class DuplicateKeyException extends Exception {
 		private static final long serialVersionUID = 42L;
+		@Override
+		public Throwable fillInStackTrace() {
+			return this;
+		}
 	}
 
 	/**
