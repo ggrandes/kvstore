@@ -43,7 +43,7 @@ import org.javastack.kvstore.utils.HexStrings;
 /**
  * Implementation of B+Tree in File
  * This class is Thread-Safe
- *
+ * 
  * @author Guillermo Grandes / guillermo.grandes[at]gmail.com
  */
 public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V>> extends BplusTree<K, V> {
@@ -150,7 +150,8 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	/**
 	 * Create B+Tree in File
 	 * 
-	 * @param autoTune if true the tree try to find best b-order for leaf/internal nodes to fit in a block of b_size bytes
+	 * @param autoTune if true the tree try to find best b-order for leaf/internal nodes to fit in a block of
+	 *            b_size bytes
 	 * @param b_size if autoTune is true is the blockSize, if false is the b-order for leaf/internal nodes
 	 * @param typeK the class type of Keys
 	 * @param typeV the class type of Values
@@ -158,7 +159,8 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	 * @throws InstantiationException
 	 * @throws IllegalAccessException
 	 */
-	public BplusTreeFile(final boolean autoTune, int b_size, final Class<K> typeK, final Class<V> typeV, final String fileName) throws InstantiationException, IllegalAccessException {
+	public BplusTreeFile(final boolean autoTune, int b_size, final Class<K> typeK, final Class<V> typeV,
+			final String fileName) throws InstantiationException, IllegalAccessException {
 		super(autoTune, false, b_size, typeK, typeV);
 		//
 		this.autoTune = autoTune;
@@ -174,7 +176,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		bufstack = BufferStacker.getInstance(blockSize, isDirect);
 		freeBlocks = new SimpleBitSet();
 		storage = new FileBlockStore(fileStorage.getAbsolutePath(), blockSize, isDirect);
-		redoStore = new FileStreamStore(fileRedo.getAbsolutePath(), blockSize<<1);
+		redoStore = new FileStreamStore(fileRedo.getAbsolutePath(), blockSize << 1);
 		redoStore.setSyncOnFlush(false);
 		redoStore.setFlushOnWrite(true);
 		validState = false;
@@ -221,13 +223,11 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		if (id < 0) {
 			if (isLeaf) {
 				maxLeafNodes++;
-			}
-			else {
+			} else {
 				maxInternalNodes++;
 			}
 			id = ++storageBlock;
-		}
-		else {
+		} else {
 			freeBlocks.clear(id);
 		}
 		return (isLeaf ? id : -id);
@@ -235,21 +235,22 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 
 	@Override
 	protected void freeNode(final Node<K, V> node) {
-		if (readOnly)
+		if (readOnly) {
 			throw new InvalidStateException();
+		}
 		final int nodeid = node.id;
 		if (nodeid == Node.NULL_ID) {
 			log.error(this.getClass().getName() + "::freeNode(" + nodeid + ") ERROR");
 			return;
 		}
 		// Se marca como borrado
-		node.delete(); 
+		node.delete();
 		putNode(node);
 	}
 
 	@Override
 	protected Node<K, V> getNode(final int nodeid) {
-		//log.debug("getNode(" +nodeid+ ")");
+		// log.debug("getNode(" +nodeid+ ")");
 		if (nodeid == Node.NULL_ID) {
 			log.error(this.getClass().getName() + "::getNode(" + nodeid + ") ERROR");
 			return null;
@@ -262,6 +263,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 
 	/**
 	 * Get node from file
+	 * 
 	 * @param nodeid int with nodeid
 	 * @return Node<K,V>
 	 */
@@ -273,23 +275,28 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			log.warn(this.getClass().getName() + "::getNodeFromStore(" + nodeid + ") WARN LOADED ROOT NODE");
 		}
 		storage.release(buf);
-		if (enableIOStats) getIOStat(nodeid).incPhysRead();
+		if (enableIOStats) {
+			getIOStat(nodeid).incPhysRead();
+		}
 		return node;
 	}
 
 	@Override
 	protected void putNode(final Node<K, V> node) {
-		if (readOnly)
+		if (readOnly) {
 			throw new InvalidStateException();
-		
+		}
+
 		if (disableAllCaches) {
 			putNodeToStore(node);
 			return;
 		}
 		setNodeDirty(node);
 	}
+
 	/**
 	 * Put a node in file
+	 * 
 	 * @param node
 	 */
 	private void putNodeToStore(final Node<K, V> node) {
@@ -305,18 +312,20 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 					buf.putLong(0);	// Fill with zeroes
 				}
 				buf.flip();
-			}
-			else {
+			} else {
 				node.clean(buf); 	// Generate zeroed minimal buffer
 			}
 			freeBlocks.set(index); 	// Mark block as free
-		}
-		else {
+		} else {
 			node.serialize(buf);
 		}
 		wbuf.save();
-		if (enableDirtyCheck) dirtyCheck.clear(index);
-		if (enableIOStats) getIOStat(nodeid).incPhysWrite();
+		if (enableDirtyCheck) {
+			dirtyCheck.clear(index);
+		}
+		if (enableIOStats) {
+			getIOStat(nodeid).incPhysWrite();
+		}
 	}
 
 	@Override
@@ -329,25 +338,37 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		final int initialCacheNodesInMem = cacheLeafNodes.size() + cacheInternalNodes.size();
 		final int initialTotalNodesInMem = initialDirtyNodesInMem + initialCacheNodesInMem;
 		final boolean doClean = (initialTotalNodesInMem >= maxTotalNodes);
-		if (!doClean) return; 
+		if (!doClean) {
+			return;
+		}
 		//
 		// Commit excess write-buffers
-		final boolean autoSync = (initialDirtyNodesInMem >= (maxTotalNodes/10)); // 10% of nodes are dirty
+		final boolean autoSync = (initialDirtyNodesInMem >= (maxTotalNodes / 10)); // 10% of nodes are dirty
 		if (autoSync) {
 			privateSync(true, false);
 		}
 		//
 		// Discard excess read-buffers
 		final int currentCacheNodesInMem = cacheLeafNodes.size() + cacheInternalNodes.size();
-		final boolean autoEvict = (currentCacheNodesInMem >= maxTotalNodes); // after clean dirty read-cache are full 
-		final int evictedCacheInternal = (autoEvict ? removeEldestElementsFromCache(cacheInternalNodes, readCacheInternal) : 0);
-		final int evictedCacheLeaf = (autoEvict ? removeEldestElementsFromCache(cacheLeafNodes, readCacheLeaf) : 0);
+		// After clean dirty read-cache are full
+		final boolean autoEvict = (currentCacheNodesInMem >= maxTotalNodes);
+		final int evictedCacheInternal, evictedCacheLeaf;
+		if (autoEvict) {
+			evictedCacheInternal = removeEldestElementsFromCache(cacheInternalNodes, readCacheInternal);
+			evictedCacheLeaf = removeEldestElementsFromCache(cacheLeafNodes, readCacheLeaf);
+		} else {
+			evictedCacheInternal = 0;
+			evictedCacheLeaf = 0;
+		}
 		//
 		// Show stats
 		if (autoSync) {
-			final int evictedTotal = evictedCacheInternal+evictedCacheLeaf;
-			final int currentUsedMem = (dirtyLeafNodes.size() + dirtyInternalNodes.size() + cacheLeafNodes.size() + cacheInternalNodes.size()) * blockSize / 1024;
+			final int evictedTotal = evictedCacheInternal + evictedCacheLeaf;
+			final int currentUsedMem = (dirtyLeafNodes.size() + dirtyInternalNodes.size()
+					+ cacheLeafNodes.size() + cacheInternalNodes.size())
+					* blockSize / 1024;
 			final StringBuilder sb = new StringBuilder();
+			// @formatter:off
 			sb
 			.append("releaseNodes()")
 			.append(" maxNodes=").append(maxLeafNodes).append("L/").append(maxInternalNodes).append("I")
@@ -358,6 +379,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			.append(" initialMem=").append(initialTotalNodesInMem * blockSize / 1024).append("KB")
 			.append(" currentMem=").append(currentUsedMem).append("KB")
 			.append(" ts=").append(System.currentTimeMillis() - ts);
+			// @formatter:on
 			if (enableDirtyCheck) {
 				sb.append(" dirtyBlocks=").append(dirtyCheck.toString());
 			}
@@ -366,7 +388,8 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	}
 
 	/**
-	 * Evict from Read Cache excess nodes  
+	 * Evict from Read Cache excess nodes
+	 * 
 	 * @param hash cache to purge
 	 * @param maxSize max elements to hold in cache
 	 * @return int number of elements evicted
@@ -374,10 +397,12 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	@SuppressWarnings("rawtypes")
 	private final int removeEldestElementsFromCache(final IntLinkedHashMap<Node> hash, final int maxSize) {
 		final int evict = hash.size() - maxSize;
-		if (evict <= 0) return 0;
+		if (evict <= 0) {
+			return 0;
+		}
 
 		for (int count = 0; count < evict; count++) {
-			hash.removeEldest(); 
+			hash.removeEldest();
 		}
 		return evict;
 	}
@@ -385,16 +410,19 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	// ===================================== Meta data Managemenet
 
 	/**
-	 * Write metadata to file 
+	 * Write metadata to file
+	 * 
 	 * @param isClean mark file with clean/true or unclean/false
 	 * @return boolean if operation is ok
 	 */
 	private boolean writeMetaData(final boolean isClean) {
-		if (readOnly)
+		if (readOnly) {
 			return true;
+		}
 		final WriteBuffer wbuf = storage.set(0);
 		final ByteBuffer buf = wbuf.buf();
 		boolean isOK = false;
+		// @formatter:off
 		buf
 		.putInt(MAGIC_1)
 		.putInt(blockSize)
@@ -411,27 +439,30 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		.put((byte) (isClean ? 0xEA : 0x00))
 		.putInt(MAGIC_2)
 		.flip();
+		// @formatter:on
 		isOK = wbuf.save();
-		if (isClean)
+		if (isClean) {
 			storage.sync();
+		}
 		try {
 			if (isClean) {
 				SimpleBitSet.serializeToFile(fileFreeBlocks, freeBlocks);
-			}
-			else {
+			} else {
 				fileFreeBlocks.delete();
 			}
+		} catch (IOException e) {
+			log.error("IOException in writeMetaData(" + isClean + ")", e);
 		}
-		catch(IOException e) {
-			log.error("IOException in writeMetaData("+isClean+")", e);
+		if (log.isDebugEnabled()) {
+			log.debug(this.getClass().getName() + "::writeMetaData() elements=" + elements + " rootIdx="
+					+ rootIdx + " lastNodeId=" + storageBlock + " freeBlocks=" + freeBlocks.cardinality());
 		}
-		if (log.isDebugEnabled())
-			log.debug(this.getClass().getName() + "::writeMetaData() elements=" + elements + " rootIdx=" + rootIdx + " lastNodeId=" + storageBlock + " freeBlocks=" + freeBlocks.cardinality());
 		return isOK;
 	}
 
 	/**
 	 * Read metadata from file
+	 * 
 	 * @return true if file is clean or not
 	 * @throws InvalidDataException if metadata is invalid
 	 */
@@ -440,13 +471,23 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		int magic1, magic2, t_b_order_leaf, t_b_order_internal, t_blockSize; // sanity
 		boolean isClean = false;
 		magic1 = buf.getInt();
-		if (magic1 != MAGIC_1) throw new InvalidDataException("Invalid metadata (MAGIC1)");
+		if (magic1 != MAGIC_1) {
+			throw new InvalidDataException("Invalid metadata (MAGIC1)");
+		}
 		t_blockSize = buf.getInt();
-		if (t_blockSize != blockSize) throw new InvalidDataException("Invalid metadata (blockSize) " + t_blockSize + " != " + blockSize);		
+		if (t_blockSize != blockSize) {
+			throw new InvalidDataException("Invalid metadata (blockSize) " + t_blockSize + " != " + blockSize);
+		}
 		t_b_order_leaf = buf.getInt();
 		t_b_order_internal = buf.getInt();
-		if (t_b_order_leaf != b_order_leaf) throw new InvalidDataException("Invalid metadata (b-order leaf) " + t_b_order_leaf + " != " + b_order_leaf);
-		if (t_b_order_internal != b_order_internal) throw new InvalidDataException("Invalid metadata (b-order internal) " + t_b_order_internal + " != " + b_order_internal);
+		if (t_b_order_leaf != b_order_leaf) {
+			throw new InvalidDataException("Invalid metadata (b-order leaf) " + t_b_order_leaf + " != "
+					+ b_order_leaf);
+		}
+		if (t_b_order_internal != b_order_internal) {
+			throw new InvalidDataException("Invalid metadata (b-order internal) " + t_b_order_internal
+					+ " != " + b_order_internal);
+		}
 		storageBlock = buf.getInt();
 		rootIdx = buf.getInt();
 		lowIdx = buf.getInt();
@@ -455,11 +496,15 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		height = buf.getInt();
 		maxInternalNodes = buf.getInt();
 		maxLeafNodes = buf.getInt();
-		isClean = ((buf.get() == ((byte)0xEA)) ? true : false);
+		isClean = ((buf.get() == ((byte) 0xEA)) ? true : false);
 		magic2 = buf.getInt();
-		if (magic2 != MAGIC_2) throw new InvalidDataException("Invalid metadata (MAGIC2)");
-		if (log.isDebugEnabled())
-			log.debug(this.getClass().getName() + "::readMetaData() elements=" + elements + " rootIdx=" + rootIdx);
+		if (magic2 != MAGIC_2) {
+			throw new InvalidDataException("Invalid metadata (MAGIC2)");
+		}
+		if (log.isDebugEnabled()) {
+			log.debug(this.getClass().getName() + "::readMetaData() elements=" + elements + " rootIdx="
+					+ rootIdx);
+		}
 		storage.release(buf);
 		// Clear Caches
 		clearReadCaches();
@@ -468,8 +513,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			try {
 				final SimpleBitSet newFreeBlocks = SimpleBitSet.deserializeFromFile(fileFreeBlocks);
 				freeBlocks = newFreeBlocks;
-			}
-			catch(IOException e) {
+			} catch (IOException e) {
 				log.error("IOException in readMetaData()", e);
 			}
 		}
@@ -487,6 +531,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 
 	/**
 	 * Recovery (readOnly can't be enabled)
+	 * 
 	 * @param forceFullRecovery to force full recovery and disallow incremental recovery
 	 * @return boolean if all right
 	 * @throws IllegalAccessException
@@ -519,7 +564,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 				final int value2 = buf.get();
 				final int foot = buf.get();
 				if ((head == 0x0C) && (head == foot) && (value1 == value2)) {
-					log.info("Meta Sync State=" + HexStrings.nativeAsHex((byte)head));
+					log.info("Meta Sync State=" + HexStrings.nativeAsHex((byte) head));
 				}
 			}
 		}
@@ -528,7 +573,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		final boolean oldUseRedo = useRedo;
 		final K factoryK = factoryK();
 		final V factoryV = factoryV();
-		BplusTreeFile<K, V> treeTmp = null; 
+		BplusTreeFile<K, V> treeTmp = null;
 		if (recoveryIncremental) {
 			log.info("Recovery in Incremental Mode (Replay Redo)");
 			//
@@ -540,7 +585,8 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			//
 			final int blocks = storage.sizeInBlocks();
 			try {
-				treeTmp = new BplusTreeFile<K, V>(autoTune, b_size, getGenericFactoryK().type, getGenericFactoryV().type, fileName + ".recover");
+				treeTmp = new BplusTreeFile<K, V>(autoTune, b_size, getGenericFactoryK().type,
+						getGenericFactoryV().type, fileName + ".recover");
 			} catch (InstantiationException e) {
 				log.error("InstantiationException in recovery()", e);
 				return false;
@@ -557,8 +603,9 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			log.info("Blocks to Scan: " + blocks);
 			for (int index = 1; index < blocks; index++) {
 				try {
-					if ((index % 100) == 0)
+					if ((index % 100) == 0) {
 						log.info("Recovering block [" + index + "/" + blocks + "]");
+					}
 					final Node<K, V> node = getNodeFromStore(index); // read
 					if (node.isLeaf()) {
 						final LeafNode<K, V> leafNode = (LeafNode<K, V>) node;
@@ -568,8 +615,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 							treeTmp.put(key, value);
 						}
 					}
-				}
-				catch (Node.InvalidNodeID e) {
+				} catch (Node.InvalidNodeID e) {
 					// Skip
 				}
 			}
@@ -584,22 +630,23 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			if ((offset = redoStore.read(offset, buf)) < 0) {
 				break;
 			}
-			if ((count++ % 100) == 0)
+			if ((count++ % 100) == 0) {
 				log.info("Applying Redo [offset=" + offset + "]");
+			}
 			final int head = buf.get();
 			switch (head) {
-			case 0x0A: // PUT
-				treeTmp.put(factoryK.deserialize(buf), factoryV.deserialize(buf));
-				break;
-			case 0x0B: // REMOVE
-				treeTmp.remove(factoryK.deserialize(buf));
-				break;
-			case 0x0C: // META
-				log.info("Meta type=" + HexStrings.nativeAsHex(buf.get()));
-				break;
-			default: // Unknown
-				log.info("Redo Operation=" + HexStrings.nativeAsHex((byte)head) + " Unknown");
-				break;
+				case 0x0A: // PUT
+					treeTmp.put(factoryK.deserialize(buf), factoryV.deserialize(buf));
+					break;
+				case 0x0B: // REMOVE
+					treeTmp.remove(factoryK.deserialize(buf));
+					break;
+				case 0x0C: // META
+					log.info("Meta type=" + HexStrings.nativeAsHex(buf.get()));
+					break;
+				default: // Unknown
+					log.info("Redo Operation=" + HexStrings.nativeAsHex((byte) head) + " Unknown");
+					break;
 			}
 		}
 		treeTmp.close();
@@ -613,8 +660,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		}
 		// Rename data files
 		final String ts = getTimeStamp();
-		if (renameFileToBroken(fileStorage, ts) &&
-				renameFileToBroken(fileRedo, ts)) {
+		if (renameFileToBroken(fileStorage, ts) && renameFileToBroken(fileRedo, ts)) {
 			// Rename tmp to good
 			treeTmp.fileStorage.renameTo(fileStorage);
 			// Remove tmp redo
@@ -632,6 +678,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 
 	/**
 	 * Open file
+	 * 
 	 * @return boolean if all right
 	 * @throws InvalidDataException if metadata is invalid
 	 */
@@ -650,19 +697,17 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			}
 			try {
 				boolean isClean = readMetaData();
-				//log.debug(this.hashCode() + "::open() clean=" + isClean);
+				// log.debug(this.hashCode() + "::open() clean=" + isClean);
 				if (isClean) {
 					if (writeMetaData(false)) {
 						populateCache();
 						allRight = true;
 					}
-				}
-				else {
+				} else {
 					// Broken
 					throw new InvalidDataException("NEED RECOVERY");
 				}
-			}
-			catch (InvalidDataException e) {
+			} catch (InvalidDataException e) {
 				validState = false;
 				storage.close();
 				redoStore.close();
@@ -694,29 +739,47 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			}
 			sync();
 			writeMetaData(true);
-			if (enableDirtyCheck) log.info("dirtyCheck=" + dirtyCheck);
+			if (enableDirtyCheck) {
+				log.info("dirtyCheck=" + dirtyCheck);
+			}
 		}
 		storage.close();
 		redoStore.close();
 		clearReadCaches();
 		clearWriteCaches();
 		validState = false;
-		//log.debug(this.hashCode() + "::close() done");
+		// log.debug(this.hashCode() + "::close() done");
 	}
 
 	/**
 	 * Clear tree and Delete associated files
 	 */
 	public synchronized void delete() {
-		try { clear(); } catch (Exception ign) {}
-		try { close(); } catch (Exception ign) {}
-		try { fileRedo.delete(); } catch (Exception ign) {}
-		try { fileStorage.delete(); } catch (Exception ign) {}
-		try { fileFreeBlocks.delete(); } catch (Exception ign) {}
+		try {
+			clear();
+		} catch (Exception ign) {
+		}
+		try {
+			close();
+		} catch (Exception ign) {
+		}
+		try {
+			fileRedo.delete();
+		} catch (Exception ign) {
+		}
+		try {
+			fileStorage.delete();
+		} catch (Exception ign) {
+		}
+		try {
+			fileFreeBlocks.delete();
+		} catch (Exception ign) {
+		}
 	}
 
 	/**
 	 * Use Redo system?
+	 * 
 	 * @param useRedo (default true)
 	 */
 	public synchronized void setUseRedo(final boolean useRedo) {
@@ -729,12 +792,14 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 
 	/**
 	 * Use Dedicated Thread for Redo?
+	 * 
 	 * @param useRedoThread (default false)
 	 */
 	public synchronized void setUseRedoThread(final boolean useRedoThread) {
 		if (this.useRedoThread && !useRedoThread) { // Stop Redo Thread
-			if (redoThread != null)
+			if (redoThread != null) {
 				stopRedoThread(redoThread);
+			}
 		}
 		this.useRedoThread = useRedoThread;
 	}
@@ -742,6 +807,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	/**
 	 * Disable Populate Cache?
 	 * Populate Caches is pre-read datastore to cache nodes
+	 * 
 	 * @param disablePopulateCache (default false)
 	 */
 	public synchronized void setDisablePopulateCache(final boolean disablePopulateCache) {
@@ -751,35 +817,45 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	/**
 	 * Disable AutoSync Storage?
 	 * If disable is true, when autoSync is invoked, storage sync is not forced (speed-up, but less secure)
+	 * 
 	 * @param disableAutoSyncStore (default false)
 	 */
 	public synchronized void setDisableAutoSyncStore(final boolean disableAutoSyncStore) {
 		this.disableAutoSyncStore = disableAutoSyncStore;
 	}
-	
+
 	/**
 	 * Enable mmap of files (default is not enabled), call before use {@link #open()}
 	 * <p/>
 	 * Recommended use of: {@link #enableMmapIfSupported()}
 	 * <p/>
-	 * <b>NOTE:</b> 32bit JVM can only address 2GB of memory, enable mmap can throw <b>java.lang.OutOfMemoryError: Map failed</b> exceptions
+	 * <b>NOTE:</b> 32bit JVM can only address 2GB of memory, enable mmap can throw
+	 * <b>java.lang.OutOfMemoryError: Map failed</b> exceptions
 	 */
 	public synchronized void enableMmap() {
-		if (validState) throw new InvalidStateException();
+		if (validState) {
+			throw new InvalidStateException();
+		}
 		storage.enableMmap();
 	}
+
 	/**
 	 * Enable mmap of files (default is not enabled) if JVM is 64bits, call before use {@link #open()}
 	 */
 	public synchronized void enableMmapIfSupported() {
-		if (validState) throw new InvalidStateException();
+		if (validState) {
+			throw new InvalidStateException();
+		}
 		storage.enableMmapIfSupported();
 	}
+
 	/**
 	 * Enable Locking of files (default is not enabled), call before use {@link #open()}
 	 */
 	public synchronized void enableLocking() {
-		if (validState) throw new InvalidStateException();
+		if (validState) {
+			throw new InvalidStateException();
+		}
 		storage.enableLocking();
 	}
 
@@ -788,9 +864,9 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			redoThread = new Thread(new Runnable() {
 				@Override
 				public void run() {
-					try  {
+					try {
 						doShutdownRedoThread.set(false);
-						ByteBuffer buf = null; 
+						ByteBuffer buf = null;
 						while (!doShutdownRedoThread.get()) {
 							buf = redoQueue.poll(1000, TimeUnit.MILLISECONDS);
 							if (buf != null) {
@@ -799,18 +875,16 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 							}
 						}
 						endProcess();
-					}
-					catch (InterruptedException ie) {
+					} catch (InterruptedException ie) {
 						endProcess();
 						Thread.currentThread().interrupt(); // Preserve
-					}
-					catch (Exception e) {
+					} catch (Exception e) {
 						log.error("Exception in createRedoThread()", e);
-					}
-					finally {
+					} finally {
 						redoThread = null;
 					}
 				}
+
 				private final void endProcess() {
 					if (!redoQueue.isEmpty()) {
 						ByteBuffer buf = null;
@@ -833,18 +907,21 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			localRedoThread.interrupt();
 			localRedoThread.join(30000);
 		} catch (Exception e) {
-			log.error("Exception in stopRedoThread("+localRedoThread+")", e);
+			log.error("Exception in stopRedoThread(" + localRedoThread + ")", e);
 		}
 	}
 
 	/**
 	 * submit put to redo
+	 * 
 	 * @param key
 	 * @param value
 	 */
 	@Override
 	protected void submitRedoPut(final K key, final V value) {
-		if (!useRedo) return;
+		if (!useRedo) {
+			return;
+		}
 		createRedoThread();
 		final ByteBuffer buf = bufstack.pop();
 		buf.put((byte) 0x0A); // PUT HEADER
@@ -866,11 +943,14 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 
 	/**
 	 * submit remove to redo
+	 * 
 	 * @param key
 	 */
 	@Override
 	protected void submitRedoRemove(final K key) {
-		if (!useRedo) return;
+		if (!useRedo) {
+			return;
+		}
 		createRedoThread();
 		final ByteBuffer buf = bufstack.pop();
 		buf.put((byte) 0x0B); // REMOVE HEADER
@@ -891,11 +971,14 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 
 	/**
 	 * submit metadata to redo
+	 * 
 	 * @param futureUse ignored (byte in the range of 0-0x7F)
 	 */
 	@Override
 	protected void submitRedoMeta(final int futureUse) {
-		if (!useRedo) return;
+		if (!useRedo) {
+			return;
+		}
 		createRedoThread();
 		final ByteBuffer buf = bufstack.pop();
 		buf.putInt(0x0C0C0C0C); // META HEADER/FOOTER
@@ -904,7 +987,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			try {
 				redoQueue.put(buf);
 			} catch (InterruptedException e) {
-				log.error("InterruptedException in submitRedoMeta("+futureUse+")", e);
+				log.error("InterruptedException in submitRedoMeta(" + futureUse + ")", e);
 			}
 		} else {
 			redoStore.write(buf);
@@ -914,6 +997,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 
 	/**
 	 * Dump tree in text form to a file
+	 * 
 	 * @param file
 	 * @throws FileNotFoundException
 	 */
@@ -922,29 +1006,29 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		try {
 			out = new PrintStream(new FileOutputStream(file));
 			dumpStorage(out);
-		}
-		finally {
-			try { out.close(); } catch(Exception ign) {}
+		} finally {
+			try {
+				out.close();
+			} catch (Exception ign) {
+			}
 		}
 	}
 
 	/**
 	 * Dump tree in text form to PrintStream (System.out?)
+	 * 
 	 * @param out PrintStream
 	 */
 	public synchronized void dumpStorage(final PrintStream out) {
-		if (!validState) throw new InvalidStateException();
+		if (!validState) {
+			throw new InvalidStateException();
+		}
 		try {
 			final StringBuilder sb = new StringBuilder(4096);
-			sb
-			.append("#")
-			.append("ID").append("\t")
-			.append("Node").append("\n");
+			sb.append("#").append("ID").append("\t").append("Node").append("\n");
 			for (int i = 1; i < storageBlock; i++) {
 				final Node<K, V> node = getNode(i);
-				sb
-				.append(i).append((rootIdx == i) ? "R\t" : "\t")
-				.append(node).append("\n");
+				sb.append(i).append((rootIdx == i) ? "R\t" : "\t").append(node).append("\n");
 				if ((i % 1000) == 0) {
 					out.print(sb.toString());
 					sb.setLength(0);
@@ -972,13 +1056,13 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	private int maxCacheSizeInBytes = DEFAULT_CACHE_SIZE_BYTES;
 
 	/**
-	 * Read cache for internal nodes 
+	 * Read cache for internal nodes
 	 */
 	@SuppressWarnings("rawtypes")
 	private IntLinkedHashMap<Node> cacheInternalNodes;
 
 	/**
-	 * Read cache for leaf nodes 
+	 * Read cache for leaf nodes
 	 */
 	@SuppressWarnings("rawtypes")
 	private IntLinkedHashMap<Node> cacheLeafNodes;
@@ -986,29 +1070,32 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	/**
 	 * Clear caches and Set new value of maximal bytes used for nodes in cache.
 	 * 
-	 * @param newsize size of cache in bytes (0 only clear caches)
 	 * <p>
 	 * <ul>
-	 * <li> Calculo aproximado del numero de elementos que se pueden mantener en memoria:
-	 * <br/> elementos=nodos*(b-leaf-order*2/3)
-	 * <li> Calculo aproximado del numero de nodos necesarios para mantener en memoria N elementos:
-	 * <br/> nodos=elementos/(b-leaf-order*2/3)
-	 * <li> El cache necesario para almacenar N nodos:
-	 * <br/> cache-size=nodos*blocksize
+	 * <li>Calculo aproximado del numero de elementos que se pueden mantener en memoria: <br/>
+	 * elementos=nodos*(b-leaf-order*2/3)
+	 * <li>Calculo aproximado del numero de nodos necesarios para mantener en memoria N elementos: <br/>
+	 * nodos=elementos/(b-leaf-order*2/3)
+	 * <li>El cache necesario para almacenar N nodos: <br/>
+	 * cache-size=nodos*blocksize
 	 * </ul>
 	 * 
-	 * <p> Ejemplos, para almacenar 5millones de registros (bloque de 1k):
+	 * <p>
+	 * Ejemplos, para almacenar 5millones de registros (bloque de 1k):
 	 * 
 	 * <ul>
-	 * <li> LongHolder (8 bytes) b-leaf-order=63
-	 * <br/> 5000000/(63*2/3) = 119047nodos * 1024bytes = 121.904.128 bytes
-	 * <li> IntHolder (4 bytes) b-leaf-order=127
-	 * <br/> 5000000/(127*2/3) = 59055nodos * 1024bytes = 60.472.320 bytes
+	 * <li>LongHolder (8 bytes) b-leaf-order=63 <br/>
+	 * 5000000/(63*2/3) = 119047nodos * 1024bytes = 121.904.128 bytes
+	 * <li>IntHolder (4 bytes) b-leaf-order=127 <br/>
+	 * 5000000/(127*2/3) = 59055nodos * 1024bytes = 60.472.320 bytes
 	 * </ul>
-	 */	
+	 * 
+	 * @param newsize size of cache in bytes (0 only clear caches)
+	 */
 	public synchronized void setMaxCacheSizeInBytes(final int newsize) {
 		if (validState) {
-			log.info(this.getClass().getName() + "::setMaxCacheSizeInBytes newsize=" + newsize + " flushing write-cache");
+			log.info(this.getClass().getName() + "::setMaxCacheSizeInBytes newsize=" + newsize
+					+ " flushing write-cache");
 			privateSync(true, false);
 			clearReadCaches();
 		}
@@ -1017,6 +1104,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			createReadCaches();
 		}
 	}
+
 	/**
 	 * @return current value of cache in bytes
 	 */
@@ -1029,8 +1117,8 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	 */
 	private void recalculateSizeReadCaches() {
 		final int maxCacheNodes = (maxCacheSizeInBytes / blockSize);
-		readCacheInternal = Math.max((int)(maxCacheNodes * .05f), 37);
-		readCacheLeaf = Math.max((int)(maxCacheNodes * .95f), 37);
+		readCacheInternal = Math.max((int) (maxCacheNodes * .05f), 37);
+		readCacheLeaf = Math.max((int) (maxCacheNodes * .95f), 37);
 	}
 
 	/**
@@ -1038,8 +1126,10 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	 */
 	private void createReadCaches() {
 		recalculateSizeReadCaches();
-		if (log.isDebugEnabled())
-			log.debug(this.getClass().getName() + "::createReadCaches readCacheInternal=" + readCacheInternal + " readCacheLeaf=" + readCacheLeaf);
+		if (log.isDebugEnabled()) {
+			log.debug(this.getClass().getName() + "::createReadCaches readCacheInternal=" + readCacheInternal
+					+ " readCacheLeaf=" + readCacheLeaf);
+		}
 		cacheInternalNodes = createCacheLRUlinked(readCacheInternal);
 		cacheLeafNodes = createCacheLRUlinked(readCacheLeaf);
 	}
@@ -1054,37 +1144,44 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	}
 
 	/**
-	 * Create a LRU hashmap of size maxSize 
+	 * Create a LRU hashmap of size maxSize
+	 * 
 	 * @param maxSize
 	 * @return IntLinkedHashMap
 	 */
 	@SuppressWarnings("rawtypes")
 	private IntLinkedHashMap<Node> createCacheLRUlinked(final int maxSize) {
-		return new IntLinkedHashMap<Node>((int)(maxSize * 1.5f), Node.class, true);
+		return new IntLinkedHashMap<Node>((int) (maxSize * 1.5f), Node.class, true);
 	}
 
 	/**
 	 * Populate read cache if cache is enabled
 	 */
 	private void populateCache() {
-		if (disableAllCaches || disablePopulateCache) return;
+		if (disableAllCaches || disablePopulateCache) {
+			return;
+		}
 		// Populate Cache
 		final long ts = System.currentTimeMillis();
-		for (int index = 1; ((index < storageBlock) && (cacheInternalNodes.size() < readCacheInternal) && (cacheLeafNodes.size() < readCacheLeaf)); index++) {
-			if (freeBlocks.get(index)) continue; // skip free
+		for (int index = 1; ((index < storageBlock) && (cacheInternalNodes.size() < readCacheInternal) && (cacheLeafNodes
+				.size() < readCacheLeaf)); index++) {
+			if (freeBlocks.get(index)) {
+				continue; // skip free
+			}
 			try {
 				final Node<K, V> node = getNodeFromStore(index); // read
 				(node.isLeaf() ? cacheLeafNodes : cacheInternalNodes).put(node.id, node);
-			}
-			catch (Node.InvalidNodeID e) {
+			} catch (Node.InvalidNodeID e) {
 				freeBlocks.set(index); // mark index as free
 			}
 		}
-		log.info("Populated read cache ts=" + (System.currentTimeMillis() - ts) + " blocks=" + storageBlock + " elements=" + elements);
+		log.info("Populated read cache ts=" + (System.currentTimeMillis() - ts) + " blocks=" + storageBlock
+				+ " elements=" + elements);
 	}
 
 	/**
 	 * Get node from cache
+	 * 
 	 * @param nodeid int with nodeid
 	 * @return Node<K,V>
 	 */
@@ -1114,13 +1211,13 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	// ===================================== WRITE CACHE
 
 	/**
-	 * Write cache for internal dirty nodes 
+	 * Write cache for internal dirty nodes
 	 */
 	@SuppressWarnings("rawtypes")
 	private final IntHashMap<Node> dirtyInternalNodes = new IntHashMap<Node>(1024, Node.class);
 
 	/**
-	 * Write cache for leaf dirty nodes 
+	 * Write cache for leaf dirty nodes
 	 */
 	@SuppressWarnings("rawtypes")
 	private final IntHashMap<Node> dirtyLeafNodes = new IntHashMap<Node>(1024, Node.class);
@@ -1132,18 +1229,23 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		@Override
 		public int compare(final Node<K, V> o1, final Node<K, V> o2) {
 			if (o1 == null) {
-				if (o2 == null) return 0; // o1 == null & o2 == null
+				if (o2 == null) {
+					return 0; // o1 == null & o2 == null
+				}
 				return 1; // o1 == null & o2 != null
 			}
-			if (o2 == null) return -1; // o1 != null & o2 == null
+			if (o2 == null) {
+				return -1; // o1 != null & o2 == null
+			}
 			final int thisVal = (o1.id < 0 ? -o1.id : o1.id);
 			final int anotherVal = (o2.id < 0 ? -o2.id : o2.id);
-			return ((thisVal<anotherVal) ? -1 : ((thisVal==anotherVal) ? 0 : 1));
+			return ((thisVal < anotherVal) ? -1 : ((thisVal == anotherVal) ? 0 : 1));
 		}
 	};
 
 	/**
 	 * Put a node in dirty cache
+	 * 
 	 * @param node
 	 */
 	private void setNodeDirty(final Node<K, V> node) {
@@ -1151,25 +1253,31 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		final int index = nodeid < 0 ? -nodeid : nodeid;
 		(node.isLeaf() ? dirtyLeafNodes : dirtyInternalNodes).put(nodeid, node);
 		(node.isLeaf() ? cacheLeafNodes : cacheInternalNodes).remove(nodeid);
-		if (enableIOStats) getIOStat(nodeid).incCacheWrite();
-		if (enableDirtyCheck) dirtyCheck.set(index);
+		if (enableIOStats) {
+			getIOStat(nodeid).incCacheWrite();
+		}
+		if (enableDirtyCheck) {
+			dirtyCheck.set(index);
+		}
 	}
 
 	/**
 	 * Write all dirty nodes
 	 */
 	public synchronized void sync() {
-		if (!validState) throw new InvalidStateException();
+		if (!validState) {
+			throw new InvalidStateException();
+		}
 		try {
 			privateSync(true, true);
-		}
-		finally {
+		} finally {
 			releaseNodes();
 		}
 	}
 
 	/**
 	 * set callback called when buffers where synched to disk
+	 * 
 	 * @param callback
 	 */
 	public void setCallback(final CallbackSync callback) {
@@ -1181,8 +1289,9 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	 */
 	@SuppressWarnings("unchecked")
 	private void privateSync(final boolean syncInternal, final boolean forceSyncStore) {
-		if (readOnly)
+		if (readOnly) {
 			return;
+		}
 		final long ts = System.currentTimeMillis();
 		boolean isDirty = false;
 		if (!dirtyLeafNodes.isEmpty() || !dirtyInternalNodes.isEmpty()) {
@@ -1195,15 +1304,19 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			final Node<K, V>[] dirtyBlocks = dirtyLeafNodes.getValues();
 			Arrays.sort(dirtyBlocks, dirtyComparatorByID);
 			for (Node<K, V> node : dirtyBlocks) {
-				if (node == null) break;
-				//if (log.isDebugEnabled()) log.debug("node.id=" + node.id);
+				if (node == null) {
+					break;
+				}
+				// if (log.isDebugEnabled()) log.debug("node.id=" + node.id);
 				dirtyLeafNodes.remove(node.id);
 				putNodeToStore(node);
-				if (!node.isDeleted()) { 
+				if (!node.isDeleted()) {
 					cacheLeafNodes.put(node.id, node);
 				}
 			}
-			if (!dirtyLeafNodes.isEmpty()) dirtyLeafNodes.clear(false); // Clear without shrink
+			if (!dirtyLeafNodes.isEmpty()) {
+				dirtyLeafNodes.clear(false); // Clear without shrink
+			}
 		}
 		// Write Internal Nodes
 		if (syncInternal && !dirtyInternalNodes.isEmpty()) {
@@ -1211,15 +1324,19 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			final Node<K, V>[] dirtyBlocks = dirtyInternalNodes.getValues();
 			Arrays.sort(dirtyBlocks, dirtyComparatorByID);
 			for (Node<K, V> node : dirtyBlocks) {
-				if (node == null) break;
-				//if (log.isDebugEnabled()) log.debug("node.id=" + node.id);
+				if (node == null) {
+					break;
+				}
+				// if (log.isDebugEnabled()) log.debug("node.id=" + node.id);
 				dirtyInternalNodes.remove(node.id);
 				putNodeToStore(node);
-				if (!node.isDeleted()) { 
+				if (!node.isDeleted()) {
 					cacheInternalNodes.put(node.id, node);
 				}
 			}
-			if (!dirtyInternalNodes.isEmpty()) dirtyInternalNodes.clear(false); // Clear without shrink
+			if (!dirtyInternalNodes.isEmpty()) {
+				dirtyInternalNodes.clear(false); // Clear without shrink
+			}
 		}
 		//
 		if (isDirty) {
@@ -1230,7 +1347,8 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			redoStore.clear();
 		}
 		if (log.isDebugEnabled()) {
-			StringBuilder sb = new StringBuilder();
+			final StringBuilder sb = new StringBuilder();
+			// @formatter:off
 			sb
 			.append(this.getClass().getName()).append("::sync()")
 			.append(" elements=").append(elements)
@@ -1249,9 +1367,10 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			.append(" free=").append(freeBlocks.cardinality())
 			.append(" }")
 			.append(" time=").append(System.currentTimeMillis() - ts);
+			// @formatter:on
 			log.debug(sb.toString());
 		}
-		//clearWriteCaches();
+		// clearWriteCaches();
 	}
 
 	/**
@@ -1278,7 +1397,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 	// ===================================== STATS
 
 	/**
-	 * I/O Stats of nodes  
+	 * I/O Stats of nodes
 	 */
 	private final IntHashMap<IOStat> iostats = new IntHashMap<IOStat>(256, IOStat.class);
 
@@ -1294,6 +1413,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 
 	/**
 	 * Return or Create if not exist an IOStat object for a nodeid
+	 * 
 	 * @param nodeid
 	 * @param isLeaf
 	 * @return IOStat object
@@ -1309,6 +1429,7 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 
 	/**
 	 * Dump IOStats of tree to a file
+	 * 
 	 * @param file
 	 * @throws FileNotFoundException
 	 */
@@ -1317,20 +1438,24 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		try {
 			out = new PrintStream(new FileOutputStream(file));
 			dumpStats(out);
-		}
-		finally {
-			try { out.close(); } catch(Exception ign) {}
+		} finally {
+			try {
+				out.close();
+			} catch (Exception ign) {
+			}
 		}
 	}
 
 	/**
 	 * Dump IOStats of tree to PrintStream (System.out?)
+	 * 
 	 * @param out PrintStream
 	 */
 	@SuppressWarnings("unused")
 	public synchronized void dumpStats(final PrintStream out) {
-		if (!validState) throw new InvalidStateException();
-
+		if (!validState) {
+			throw new InvalidStateException();
+		}
 		out.println("=== Stats ===");
 		out.println("maxAllocatedInternalNodes=" + maxInternalNodes);
 		out.println("maxAllocatedLeafNodes=" + maxLeafNodes);
@@ -1340,7 +1465,8 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		out.println("internalNodeSize=" + internalNodeFactory.getStructMaxSize());
 		out.println("blockSize=" + blockSize);
 		out.println("currentCacheSize=" + (maxCacheSizeInBytes / 1024 / 1024) + "MB");
-		out.println("minRecomendedCacheSize=" + ((blockSize * (maxInternalNodes + maxLeafNodes)) / 1024 / 1024) + "MB");
+		out.println("minRecomendedCacheSize="
+				+ ((blockSize * (maxInternalNodes + maxLeafNodes)) / 1024 / 1024) + "MB");
 
 		if (!enableIOStats) {
 			out.println("=== IOStats ===");
@@ -1353,24 +1479,30 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			@Override
 			public int compare(final IOStat o1, final IOStat o2) {
 				if (o1 == null) {
-					if (o2 == null) return 0; // o1 == null & o2 == null
+					if (o2 == null) {
+						return 0; // o1 == null & o2 == null
+					}
 					return 1; // o1 == null & o2 != null
 				}
-				if (o2 == null) return -1; // o1 != null & o2 == null
-				final long thisVal = ((o1.id < 0 ? 0 : 1)<<63) + (o1.physRead<<16) + o1.physWrite; // o1.id;
-				final long anotherVal = ((o2.id < 0 ? 0 : 1)<<63) + (o2.physRead<<16) + o2.physWrite; // o2.id;
-				return ((thisVal<anotherVal) ? -1 : ((thisVal==anotherVal) ? 0 : 1));
+				if (o2 == null) {
+					return -1; // o1 != null & o2 == null
+				}
+				final long thisVal = ((o1.id < 0 ? 0 : 1) << 63) + (o1.physRead << 16) + o1.physWrite; // o1.id;
+				final long anotherVal = ((o2.id < 0 ? 0 : 1) << 63) + (o2.physRead << 16) + o2.physWrite; // o2.id;
+				return ((thisVal < anotherVal) ? -1 : ((thisVal == anotherVal) ? 0 : 1));
 			}
 		};
 		Arrays.sort(ios, ioComparator);
 		for (final IOStat io : ios) {
-			if (io == null) break;
+			if (io == null) {
+				break;
+			}
 			out.println(io.toString());
 		}
 	}
 
 	/**
-	 * Class to hold I/O stats of nodes (physical read/write), (cache read/write) 
+	 * Class to hold I/O stats of nodes (physical read/write), (cache read/write)
 	 */
 	private static class IOStat {
 		public final int id;
@@ -1378,28 +1510,34 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 		public int physWrite = 0;
 		public int cacheRead = 0;
 		public int cacheWrite = 0;
-		//
+
 		public IOStat(final int nodeid) {
 			this.id = nodeid;
 		}
+
 		public IOStat incPhysRead() {
 			physRead++;
 			return this;
 		}
+
 		public IOStat incPhysWrite() {
 			physWrite++;
 			return this;
 		}
+
 		public IOStat incCacheRead() {
 			cacheRead++;
 			return this;
 		}
+
 		public IOStat incCacheWrite() {
 			cacheWrite++;
 			return this;
 		}
+
 		public String toString() {
-			StringBuilder sb = new StringBuilder();
+			final StringBuilder sb = new StringBuilder();
+			// @formatter:off
 			sb
 			.append(Node.isLeaf(id) ? "L" : "I")
 			.append(id < 0 ? -id : id)
@@ -1407,8 +1545,8 @@ public final class BplusTreeFile<K extends DataHolder<K>, V extends DataHolder<V
 			.append(" pw=").append(physWrite)
 			.append(" cr=").append(cacheRead)
 			.append(" cw=").append(cacheWrite);
+			// @formatter:on
 			return sb.toString();
 		}
 	}
-
 }

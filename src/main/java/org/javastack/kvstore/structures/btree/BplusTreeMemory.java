@@ -20,13 +20,13 @@ import org.javastack.kvstore.structures.hash.IntHashMap;
 /**
  * Implementation of B+Tree in Memory
  * This class is Thread-Safe
- *
+ * 
  * @author Guillermo Grandes / guillermo.grandes[at]gmail.com
  */
 public final class BplusTreeMemory<K extends DataHolder<K>, V extends DataHolder<V>> extends BplusTree<K, V> {
 
 	/**
-	 * Storage of nodes 
+	 * Storage of nodes
 	 */
 	@SuppressWarnings("rawtypes")
 	private final IntHashMap<Node> storeNodes = new IntHashMap<Node>(17, Node.class);
@@ -45,7 +45,8 @@ public final class BplusTreeMemory<K extends DataHolder<K>, V extends DataHolder
 	 * @throws InstantiationException
 	 * @throws IllegalAccessException
 	 */
-	public BplusTreeMemory(final int b_order, final Class<K> typeK, final Class<V> typeV) throws InstantiationException, IllegalAccessException {
+	public BplusTreeMemory(final int b_order, final Class<K> typeK, final Class<V> typeV)
+			throws InstantiationException, IllegalAccessException {
 		super(false, true, b_order, typeK, typeV);
 		clearStates();
 	}

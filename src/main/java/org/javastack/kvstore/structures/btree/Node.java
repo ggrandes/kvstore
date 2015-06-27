@@ -23,22 +23,22 @@ import org.javastack.kvstore.holders.DataHolder;
 /**
  * Generic Node definition
  * This class is NOT Thread-Safe
- *
+ * 
  * @param <K>
  * @param <V>
- *
+ * 
  * @author Guillermo Grandes / guillermo.grandes[at]gmail.com
  */
 public abstract class Node<K extends DataHolder<K>, V extends DataHolder<V>> {
 	private static final Logger log = Logger.getLogger(Node.class);
 	public static final int NULL_ID = 0;
-	//
+
 	public final BplusTree<K, V> tree;
 	public final K[] keys;
-	//
+
 	public int id = Node.NULL_ID;
 	public int allocated = 0;
-	//
+
 	protected Node(final BplusTree<K, V> tree) {
 		this.tree = tree;
 		this.keys = tree.getGenericFactoryK().newArray(getBOrder());
@@ -47,7 +47,7 @@ public abstract class Node<K extends DataHolder<K>, V extends DataHolder<V>> {
 	public int allocId() {
 		id = tree.allocNode(isLeaf());
 		// Dont do this here, do after allocId or after split
-		//tree.putNode(this); 
+		// tree.putNode(this);
 		return id;
 	}
 
@@ -56,22 +56,22 @@ public abstract class Node<K extends DataHolder<K>, V extends DataHolder<V>> {
 	}
 
 	/**
-	 * Searches using the binary search algorithm.
-	 * {@link Arrays#binarySearch(Object[], int, int, Object)}
+	 * Searches using the binary search algorithm. {@link Arrays#binarySearch(Object[], int, int, Object)}
+	 * 
 	 * @param key the value to be searched for
 	 * @return index of the search key, if it is contained in the array
-	 *	       within the specified range;
-	 *	       otherwise, <tt>(-(<i>insertion point</i>) - 1)</tt>.  The
-	 *	       <i>insertion point</i> is defined as the point at which the
-	 *	       key would be inserted into the array: the index of the first
-	 *	       element in the range greater than the key,
-	 *	       or <tt>toIndex</tt> if all
-	 *	       elements in the range are less than the specified key.  Note
-	 *	       that this guarantees that the return value will be &gt;= 0 if
-	 *	       and only if the key is found.
+	 *         within the specified range;
+	 *         otherwise, <tt>(-(<i>insertion point</i>) - 1)</tt>. The
+	 *         <i>insertion point</i> is defined as the point at which the
+	 *         key would be inserted into the array: the index of the first
+	 *         element in the range greater than the key,
+	 *         or <tt>toIndex</tt> if all
+	 *         elements in the range are less than the specified key. Note
+	 *         that this guarantees that the return value will be &gt;= 0 if
+	 *         and only if the key is found.
 	 */
 	public final int findSlotByKey(final K searchKey) {
-		//return Arrays.binarySearch(keys, 0, allocated, searchKey);
+		// return Arrays.binarySearch(keys, 0, allocated, searchKey);
 		int low = 0;
 		int high = allocated - 1;
 
@@ -82,11 +82,9 @@ public abstract class Node<K extends DataHolder<K>, V extends DataHolder<V>> {
 
 			if (cmp < 0) {
 				low = mid + 1;
-			}
-			else if (cmp > 0) {
+			} else if (cmp > 0) {
 				high = mid - 1;
-			}
-			else {
+			} else {
 				return mid; // key found
 			}
 		}
@@ -96,16 +94,21 @@ public abstract class Node<K extends DataHolder<K>, V extends DataHolder<V>> {
 	public boolean isEmpty() { // node empty
 		return (allocated <= 0);
 	}
+
 	public boolean isFull() { // node is full
-		if (log.isDebugEnabled()) log.debug("allocated=" + allocated + " keys.length=" + keys.length);
+		if (log.isDebugEnabled())
+			log.debug("allocated=" + allocated + " keys.length=" + keys.length);
 		return (allocated >= keys.length);
 	}
+
 	public boolean isUnderFlow() {
 		return (allocated < (keys.length >> 1));
 	}
+
 	public boolean canMerge(final Node<K, V> other) {
 		return ((allocated + other.allocated + 1) < keys.length); // TODO: revisar el +1
 	}
+
 	protected void clear() {
 		Arrays.fill(keys, null);
 		allocated = 0;
@@ -122,24 +125,30 @@ public abstract class Node<K extends DataHolder<K>, V extends DataHolder<V>> {
 
 	// insert element
 	protected void moveElementsRight(final Object[] elements, final int srcPos) {
-		if (log.isDebugEnabled()) log.debug("moveElementsRight("+srcPos+") allocated=" + allocated + ":" + keys.length + ":" + (allocated-srcPos) + ":" + (keys.length-srcPos-1));
-		System.arraycopy(elements, srcPos, elements, srcPos+1, allocated-srcPos);
+		if (log.isDebugEnabled()) {
+			log.debug("moveElementsRight(" + srcPos + ") allocated=" + allocated + ":" + keys.length + ":"
+					+ (allocated - srcPos) + ":" + (keys.length - srcPos - 1));
+		}
+		System.arraycopy(elements, srcPos, elements, srcPos + 1, allocated - srcPos);
 	}
+
 	// remove element
 	protected void moveElementsLeft(final Object[] elements, final int srcPos) {
-		if (log.isDebugEnabled()) log.debug("moveElementsLeft("+srcPos+") allocated=" + allocated + ":" + keys.length + ":" + (allocated-srcPos-1) + ":" + (keys.length-srcPos-1));
-		System.arraycopy(elements, srcPos+1, elements, srcPos, allocated-srcPos-1);
+		if (log.isDebugEnabled()) {
+			log.debug("moveElementsLeft(" + srcPos + ") allocated=" + allocated + ":" + keys.length + ":"
+					+ (allocated - srcPos - 1) + ":" + (keys.length - srcPos - 1));
+		}
+		System.arraycopy(elements, srcPos + 1, elements, srcPos, allocated - srcPos - 1);
 	}
 
 	public int countKeys() {
 		int low = 0, high = keys.length;
 		while (high != low) {
-			int middle = (high+low)/2;
+			int middle = (high + low) / 2;
 			if (keys[middle] == null) {
 				high = middle;
-			}
-			else {
-				low = middle+1;
+			} else {
+				low = middle + 1;
 			}
 		}
 		return low;
@@ -151,26 +160,31 @@ public abstract class Node<K extends DataHolder<K>, V extends DataHolder<V>> {
 		final K factoryK = tree.factoryK();
 		return (4 + 2 + (keys.length * factoryK.byteLength()));
 	}
+
 	public int getStructEstimateSize(final int b) {
 		final K factoryK = tree.factoryK();
 		return (4 + 2 + (b * factoryK.byteLength()));
 	}
+
 	public void serialize(final ByteBuffer buf) {
 		buf.clear();
 		buf.putInt(id);								// 4 bytes
-		buf.putShort((short)(allocated & 0x7FFF));	// 2 bytes
+		buf.putShort((short) (allocated & 0x7FFF));	// 2 bytes
 		for (int i = 0; i < allocated; i++) {		// X bytes * b_order
 			keys[i].serialize(buf);
 		}
 	}
+
 	public final void clean(final ByteBuffer buf) {
 		buf.clear();
-		//buf.putInt(0);			// 4 bytes
-		//buf.putShort((short)0);	// 2 bytes
-		buf.putLong(0);			// 8 bytes
+		// buf.putInt(0); // 4 bytes
+		// buf.putShort((short) 0); // 2 bytes
+		buf.putLong(0);				// 8 bytes
 		buf.flip();
 	}
-	public static <K extends DataHolder<K>, V extends DataHolder<V>> Node<K, V> deserialize(final ByteBuffer buf, final BplusTree<K, V>  tree) {
+
+	public static <K extends DataHolder<K>, V extends DataHolder<V>> Node<K, V> deserialize(
+			final ByteBuffer buf, final BplusTree<K, V> tree) {
 		final int id = buf.getInt();
 		if (id == NULL_ID) {
 			throw InvalidNodeID.NULL_ID;
@@ -180,10 +194,11 @@ public abstract class Node<K extends DataHolder<K>, V extends DataHolder<V>> {
 		node.id = id;
 		return node.deserializeNode(buf);
 	}
+
 	protected Node<K, V> deserializeNode(final ByteBuffer buf) {
 		final K factoryK = tree.factoryK();
 		allocated = buf.getShort();
-		//Arrays.fill(keys, null);
+		// Arrays.fill(keys, null);
 		for (int i = 0; i < allocated; i++) {
 			keys[i] = factoryK.deserialize(buf);
 		}
@@ -193,10 +208,15 @@ public abstract class Node<K extends DataHolder<K>, V extends DataHolder<V>> {
 	// ========= Abstract =========
 
 	abstract public boolean remove(int slot);
+
 	abstract public boolean isLeaf();
+
 	abstract public Node<K, V> split();
+
 	abstract public int getBOrder();
+
 	abstract public boolean isFreeable();
+
 	abstract public K splitShiftKeysLeft();
 
 	/**
@@ -205,7 +225,8 @@ public abstract class Node<K extends DataHolder<K>, V extends DataHolder<V>> {
 	 * @param nodeParent a node parent for this & nodeFROM
 	 * @param nodeFROM a node (will be clean)
 	 */
-	abstract protected void merge(final InternalNode<K, V> nodeParent, final int slot, final Node<K, V> nodeFROM);
+	abstract protected void merge(final InternalNode<K, V> nodeParent, final int slot,
+			final Node<K, V> nodeFROM);
 
 	/**
 	 * Shift keys from nodeFROM (left) into this node (right)
@@ -214,19 +235,23 @@ public abstract class Node<K extends DataHolder<K>, V extends DataHolder<V>> {
 	 * @param slot the index nodeTO in nodeParent.childs
 	 * @param nodeFROM the right sibling of nodeTO
 	 */
-	abstract protected void shiftLR(final InternalNode<K, V> nodeParent, final int slot, final Node<K, V> nodeFROM);
+	abstract protected void shiftLR(final InternalNode<K, V> nodeParent, final int slot,
+			final Node<K, V> nodeFROM);
 
 	/**
 	 * Shift keys from node nodeFROM (right) into this node (left)
+	 * 
 	 * @param nodeParent the parent of nodeFROM and this node
 	 * @param slot the index nodeTO in nodeParent.childs
 	 * @param nodeFROM the left sibling of nodeTO
 	 */
-	abstract protected void shiftRL(final InternalNode<K, V> nodeParent, final int slot, final Node<K, V> nodeFROM);
+	abstract protected void shiftRL(final InternalNode<K, V> nodeParent, final int slot,
+			final Node<K, V> nodeFROM);
 
 	public static class InvalidNodeID extends RuntimeException {
 		private static final long serialVersionUID = 42L;
 		public static final InvalidNodeID NULL_ID = new InvalidNodeID("Invalid Node id=NULL_ID");
+
 		public InvalidNodeID(final String error) {
 			super(error);
 		}

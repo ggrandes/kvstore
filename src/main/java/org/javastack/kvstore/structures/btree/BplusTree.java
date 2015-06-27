@@ -29,19 +29,19 @@ import org.javastack.kvstore.utils.GenericFactory;
  * This class is Thread-Safe.
  * 
  * <p>
- * Note that the iterator cannot be guaranteed to be thread-safe as it is,
- * generally speaking, impossible to make any hard guarantees in the presence of
- * unsynchronized concurrent modification.
+ * Note that the iterator cannot be guaranteed to be thread-safe as it is, generally speaking, impossible to
+ * make any hard guarantees in the presence of unsynchronized concurrent modification.
  * 
  * <p>
- * All TreeEntry pairs returned by methods in this class and its views represent
- * snapshots of mappings at the time they were produced. They do not support the
- * Entry.setValue method.
- *
+ * All TreeEntry pairs returned by methods in this class and its views represent snapshots of mappings at the
+ * time they were produced. They do not support the Entry.setValue method.
+ * 
  * @author Guillermo Grandes / guillermo.grandes[at]gmail.com
- * @references <a href="https://github.com/jankotek/JDBM3">JDBM3</a> / <a href="http://opendatastructures.org/">ODS</a>
+ * @references <a href="https://github.com/jankotek/JDBM3">JDBM3</a> / <a
+ *             href="http://opendatastructures.org/">ODS</a>
  */
-public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>> implements Iterable<BplusTree.TreeEntry<K,V>> {
+public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>> implements
+		Iterable<BplusTree.TreeEntry<K, V>> {
 	private static final Logger log = Logger.getLogger(BplusTree.class);
 	/**
 	 * Minimal B-Order allowed for leaf/internal nodes
@@ -50,12 +50,14 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 
 	/**
 	 * maximum number of children of a node (odd/impar number)
-	 * <p><i> Note: density of node minimal (b-order/2), average (b-order*2/3)
+	 * <p>
+	 * <i> Note: density of node minimal (b-order/2), average (b-order*2/3)
 	 */
 	protected int b_order_internal;
 	/**
 	 * maximum number of values of a node (odd/impar number)
-	 * <p><i> Note: density of node minimal (b-order/2), average (b-order*2/3)
+	 * <p>
+	 * <i> Note: density of node minimal (b-order/2), average (b-order*2/3)
 	 */
 	protected int b_order_leaf;
 
@@ -101,9 +103,8 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 	private final K factoryK;
 	private final V factoryV;
 
-
 	/**
-	 * Trace Internal Nodes (put/remove) 
+	 * Trace Internal Nodes (put/remove)
 	 */
 	private final ObjectStack<InternalNode<K, V>> stackNodes = new ObjectStack<InternalNode<K, V>>(16);
 	/**
@@ -113,7 +114,9 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 
 	/**
 	 * Create B+Tree
-	 * @param autoTune if true the tree try to find best b-order for leaf/internal nodes to fit in a block of b_size bytes
+	 * 
+	 * @param autoTune if true the tree try to find best b-order for leaf/internal nodes to fit in a block of
+	 *            b_size bytes
 	 * @param isMemory if true the tree is in Memory only
 	 * @param b_size if autoTune is true is the blockSize, if false is the b-order for leaf/internal nodes
 	 * @param typeK the class type of Keys
@@ -121,68 +124,86 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 	 * @throws InstantiationException
 	 * @throws IllegalAccessException
 	 */
-	public BplusTree(final boolean autoTune, final boolean isMemory, int b_size, final Class<K> typeK, final Class<V> typeV) throws InstantiationException, IllegalAccessException {
-		genericFactoryK = new GenericFactory<K>(typeK); 
+	public BplusTree(final boolean autoTune, final boolean isMemory, int b_size, final Class<K> typeK,
+			final Class<V> typeV) throws InstantiationException, IllegalAccessException {
+		genericFactoryK = new GenericFactory<K>(typeK);
 		genericFactoryV = new GenericFactory<V>(typeV);
-		factoryK = genericFactoryK.newInstance(); 
-		factoryV = genericFactoryV.newInstance(); 
+		factoryK = genericFactoryK.newInstance();
+		factoryV = genericFactoryV.newInstance();
 		if (autoTune) {
 			findOptimalNodeOrder(b_size);
-		}
-		else {
-			if (b_size < MIN_B_ORDER) b_size = MIN_B_ORDER; // minimal b-order
+		} else {
+			if (b_size < MIN_B_ORDER) {
+				b_size = MIN_B_ORDER; // minimal b-order
+			}
 			b_size += 1 - (b_size % 2); // round odd/impar
 			b_order_leaf = b_size;
 			b_order_internal = b_size;
-			if (!isMemory)
+			if (!isMemory) {
 				blockSize = roundBlockSize(getMaxStructSize(), blockSize);
+			}
 		}
 		//
 		leafNodeFactory = createLeafNode();
 		internalNodeFactory = createInternalNode();
 		if (log.isDebugEnabled()) {
-			log.debug(this.getClass().getName() + "::BplusTree() LeafNode b=" + b_order_leaf + " size=" + (isMemory ? -1 : leafNodeFactory.getStructMaxSize()));
-			log.debug(this.getClass().getName() + "::BplusTree() InternalNode b=" + b_order_internal+ " size=" + (isMemory ? -1 : internalNodeFactory.getStructMaxSize()));
-			if (!isMemory)
+			log.debug(this.getClass().getName() + "::BplusTree() LeafNode b=" + b_order_leaf //
+					+ " size=" + (isMemory ? -1 : leafNodeFactory.getStructMaxSize()));
+			log.debug(this.getClass().getName() + "::BplusTree() InternalNode b=" + b_order_internal //
+					+ " size=" + (isMemory ? -1 : internalNodeFactory.getStructMaxSize()));
+			if (!isMemory) {
 				log.debug(this.getClass().getName() + "::BplusTree() FileStorageBlock blocksize=" + blockSize);
+			}
 		}
 		validState = false;
 	}
 
 	/**
 	 * Return the highest nodeid allocated
-	 * @return integer 
+	 * 
+	 * @return integer
 	 */
 	abstract public int getHighestNodeId();
+
 	/**
 	 * Alloc a nodeid of type Leaf/Internal
+	 * 
 	 * @param isLeaf
 	 * @return integer with nodeid
 	 */
 	abstract protected int allocNode(final boolean isLeaf);
+
 	/**
 	 * Get node from the underlying store
+	 * 
 	 * @param nodeid int with nodeid
 	 * @return Node<K,V>
 	 */
 	abstract protected Node<K, V> getNode(final int nodeid);
+
 	/**
 	 * Put a node in the underlying store
+	 * 
 	 * @param node
 	 */
 	abstract protected void putNode(final Node<K, V> node);
+
 	/**
 	 * Free a node from the underlying store
+	 * 
 	 * @param node
 	 */
 	abstract protected void freeNode(final Node<K, V> node);
+
 	/**
-	 * This method is invoked after any operation in the 
+	 * This method is invoked after any operation in the
 	 * tree that set/put a node from underlying store
 	 */
 	abstract protected void releaseNodes();
+
 	/**
 	 * Clear the underlying storage and empty the tree
+	 * 
 	 * @return boolean true/false if operation end succesfully
 	 */
 	abstract protected boolean clearStorage();
@@ -191,7 +212,9 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 	 * Mark Storage as Read Only if not already opened
 	 */
 	public synchronized void setReadOnly() {
-		if (validState) throw new InvalidStateException();
+		if (validState) {
+			throw new InvalidStateException();
+		}
 		readOnly = true;
 	}
 
@@ -199,10 +222,12 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 	 * Clear the tree
 	 */
 	public synchronized void clear() {
-		if (readOnly)
+		if (readOnly) {
 			return;
-		if (clearStorage())
+		}
+		if (clearStorage()) {
 			clearStates();
+		}
 	}
 
 	/**
@@ -215,24 +240,31 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 
 	/**
 	 * Return the number of elements in the tree
+	 * 
 	 * @return
 	 */
 	public synchronized int size() {
-		if (!validState) throw new InvalidStateException();
+		if (!validState) {
+			throw new InvalidStateException();
+		}
 		return elements;
 	}
 
 	/**
 	 * Returns true if this tree contains no key-value mappings.
+	 * 
 	 * @return true if this tree contains no key-value mappings
 	 */
 	public synchronized boolean isEmpty() {
-		if (!validState) throw new InvalidStateException();
+		if (!validState) {
+			throw new InvalidStateException();
+		}
 		return _isEmpty();
 	}
 
 	/**
 	 * Returns true if this tree contains no key-value mappings.
+	 * 
 	 * @return true if this tree contains no key-value mappings
 	 */
 	private final boolean _isEmpty() {
@@ -241,18 +273,22 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 
 	/**
 	 * Create a LeafNode without alloc nodeid for this
+	 * 
 	 * @return
 	 */
 	protected LeafNode<K, V> createLeafNode() {
 		return new LeafNode<K, V>(this);
 	}
+
 	/**
 	 * Create an InternalNode without alloc nodeid for this
+	 * 
 	 * @return
 	 */
 	protected InternalNode<K, V> createInternalNode() {
 		return new InternalNode<K, V>(this);
 	}
+
 	/**
 	 * Create a Leaf root node and alloc nodeid for this
 	 */
@@ -267,6 +303,7 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 
 	/**
 	 * Get the maximal size for a node
+	 * 
 	 * @return integer with the max size of a leaf / internal node
 	 */
 	private int getMaxStructSize() {
@@ -277,24 +314,26 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 
 	/**
 	 * Calculate optimal values for b-order to fit in a block of block_size
+	 * 
 	 * @param block_size integer with block size (bytes)
 	 */
 	private void findOptimalNodeOrder(final int block_size) {
 		final Node<K, V> leaf = createLeafNode();
 		final Node<K, V> internal = createInternalNode();
 		// Get Maximal Size
-		final int nodeSize = Math.max(leaf.getStructEstimateSize(MIN_B_ORDER), internal.getStructEstimateSize(MIN_B_ORDER));
+		final int nodeSize = Math.max(leaf.getStructEstimateSize(MIN_B_ORDER),
+				internal.getStructEstimateSize(MIN_B_ORDER));
 		// Find minimal blockSize
 		blockSize = ((nodeSize > block_size) ? roundBlockSize(nodeSize, block_size) : block_size);
 		// Find b-order for Leaf Nodes
 		b_order_leaf = findOptimalNodeOrder(leaf);
 		// Find b-order for Internal Nodes
 		b_order_internal = findOptimalNodeOrder(internal);
-		//
 	}
 
 	/**
 	 * Find b-order for a blockSize of this tree
+	 * 
 	 * @param node of type Leaf or Integernal
 	 * @return integer with b-order
 	 */
@@ -303,28 +342,30 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 		int high = (blockSize / node.getStructEstimateSize(1)) << 2; // estimate high b-order
 
 		while (low <= high) {
-			int mid = ((low + high) >>> 1); 
+			int mid = ((low + high) >>> 1);
 			mid += (1 - (mid % 2));
 			int nodeSize = node.getStructEstimateSize(mid);
 
-			if (log.isDebugEnabled())
-				log.debug(this.getClass().getName() + "::findOptimalNodeOrder(" + node.getClass().getName() + ") blockSize=" + blockSize + " nodeSize=" + nodeSize + " b_low=" + low + " b_order=" + mid + " b_high=" + high);
+			if (log.isDebugEnabled()) {
+				log.debug(this.getClass().getName() + "::findOptimalNodeOrder(" + node.getClass().getName()
+						+ ") blockSize=" + blockSize + " nodeSize=" + nodeSize + " b_low=" + low
+						+ " b_order=" + mid + " b_high=" + high);
+			}
 
 			if (nodeSize < blockSize) {
 				low = mid + 2;
-			}
-			else if (nodeSize > blockSize) {
+			} else if (nodeSize > blockSize) {
 				high = mid - 2;
-			}
-			else {
+			} else {
 				return mid;
 			}
 		}
-		return low-2;
+		return low - 2;
 	}
 
 	/**
 	 * Round a size with a blocksize
+	 * 
 	 * @param size
 	 * @param blocksize
 	 * @return
@@ -334,13 +375,14 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 	}
 
 	/**
-	 * @return B-order of a InternalNode 
+	 * @return B-order of a InternalNode
 	 */
 	public int getBOrderInternal() {
 		return b_order_internal;
 	}
+
 	/**
-	 * @return B-order of a LeafNode 
+	 * @return B-order of a LeafNode
 	 */
 	public int getBOrderLeaf() {
 		return b_order_leaf;
@@ -352,6 +394,7 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 	protected GenericFactory<K> getGenericFactoryK() {
 		return genericFactoryK;
 	}
+
 	/**
 	 * @return GenericFactory to create Values
 	 */
@@ -365,6 +408,7 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 	protected K factoryK() {
 		return factoryK;
 	}
+
 	/**
 	 * @return Return Value
 	 */
@@ -374,6 +418,7 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 
 	/**
 	 * Find node that can hold the key
+	 * 
 	 * @param key
 	 * @return LeafNode<K, V> containing the key or null if not found
 	 */
@@ -384,75 +429,82 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 			stackSlots.clear();
 		}
 		while (!node.isLeaf()) {
-			final InternalNode<K, V> nodeInternal = (InternalNode<K, V>)node;
+			final InternalNode<K, V> nodeInternal = (InternalNode<K, V>) node;
 			int slot = node.findSlotByKey(key);
-			slot = ((slot < 0) ? (-slot)-1 : slot+1);
+			slot = ((slot < 0) ? (-slot) - 1 : slot + 1);
 			if (tracePath) {
 				stackNodes.push(nodeInternal);
 				stackSlots.push(slot);
 			}
 			node = getNode(nodeInternal.childs[slot]);
 			if (node == null) {
-				log.error("ERROR childs["+slot+"] in node=" + nodeInternal);
+				log.error("ERROR childs[" + slot + "] in node=" + nodeInternal);
 				return null;
 			}
 		}
-		return (node.isLeaf() ? (LeafNode<K, V>)node : null);
+		return (node.isLeaf() ? (LeafNode<K, V>) node : null);
 	}
 
 	/**
 	 * Returns the height of this tree.
+	 * 
 	 * @return int with height of this tree, 0 is tree is empty
 	 */
 	public synchronized int getHeight() {
-		if (!validState) throw new InvalidStateException();
-		if (elements == 0) return 0;
-		//		int height = 0;
-		//		try {
-		//			int nodeIdx = rootIdx;
-		//			Node<K, V> nodeFind = getNode(nodeIdx);
-		//			while (!nodeFind.isLeaf()) {
-		//				++height;
-		//				nodeIdx = ((InternalNode<K, V>)nodeFind).childs[0];
-		//				nodeFind = getNode(nodeIdx);
-		//			}
-		//			++height;
-		//		} finally {
-		//			releaseNodes();
-		//		}
+		if (!validState) {
+			throw new InvalidStateException();
+		}
+		if (elements == 0) {
+			return 0;
+		}
 		return height;
 	}
 
 	/**
 	 * Returns the first (lowest) key currently in this tree.
+	 * 
 	 * @return key
 	 */
 	public synchronized K firstKey() {
-		if (!validState) throw new InvalidStateException();
+		if (!validState) {
+			throw new InvalidStateException();
+		}
 		final LeafNode<K, V> node = findSideLeafNode(true);
-		if (node == null) return null;
+		if (node == null) {
+			return null;
+		}
 		return node.keys[0];
 	}
 
 	/**
 	 * Returns the last (highest) key currently in this tree.
+	 * 
 	 * @return key
 	 */
 	public synchronized K lastKey() {
-		if (!validState) throw new InvalidStateException();
+		if (!validState) {
+			throw new InvalidStateException();
+		}
 		final LeafNode<K, V> node = findSideLeafNode(false);
-		if (node == null) return null;
-		return node.keys[node.allocated-1];
+		if (node == null) {
+			return null;
+		}
+		return node.keys[node.allocated - 1];
 	}
 
 	/**
 	 * Returns the first (lowest) key currently in this tree.
+	 * 
 	 * @return key
 	 */
 	public synchronized TreeEntry<K, V> firstEntry() {
-		if (!validState) throw new InvalidStateException();
+		if (!validState) {
+			throw new InvalidStateException();
+		}
 		final LeafNode<K, V> node = findSideLeafNode(true);
-		if (node == null) return null;
+		if (node == null) {
+			return null;
+		}
 		final K key = node.keys[0];
 		final V value = node.values[0];
 		return ((key == null) ? null : new TreeEntry<K, V>(key, value));
@@ -460,53 +512,69 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 
 	/**
 	 * Returns the last (highest) key currently in this tree.
+	 * 
 	 * @return key
 	 */
 	public synchronized TreeEntry<K, V> lastEntry() {
-		if (!validState) throw new InvalidStateException();
+		if (!validState) {
+			throw new InvalidStateException();
+		}
 		final LeafNode<K, V> node = findSideLeafNode(false);
-		if (node == null) return null;
-		final int slot = node.allocated-1;
+		if (node == null) {
+			return null;
+		}
+		final int slot = node.allocated - 1;
 		final K key = node.keys[slot];
 		final V value = node.values[slot];
 		return ((key == null) ? null : new TreeEntry<K, V>(key, value));
 	}
 
 	/**
-	 * Removes and returns a key-value mapping associated with the least key in this map, or null if the map is empty.
+	 * Removes and returns a key-value mapping associated with the least key in this map, or null if the map
+	 * is empty.
+	 * 
 	 * @return entry
 	 */
 	public synchronized TreeEntry<K, V> pollFirstEntry() {
 		final TreeEntry<K, V> entry = firstEntry();
-		if (entry != null) remove(entry.getKey());
+		if (entry != null) {
+			remove(entry.getKey());
+		}
 		return entry;
 	}
 
 	/**
-	 * Removes and returns a key-value mapping associated with the greatest key in this map, or null if the map is empty.
+	 * Removes and returns a key-value mapping associated with the greatest key in this map, or null if the
+	 * map is empty.
+	 * 
 	 * @return entry
 	 */
 	public synchronized TreeEntry<K, V> pollLastEntry() {
 		final TreeEntry<K, V> entry = lastEntry();
-		if (entry != null) remove(entry.getKey());
+		if (entry != null) {
+			remove(entry.getKey());
+		}
 		return entry;
 	}
 
 	/**
 	 * Return the first/low or last/high LeafNode in the Tree
+	 * 
 	 * @param lowORhigh true first/low node, false last/high node
 	 * @return the LeafNoder head/first/lower or tail/last/higher
 	 */
 	private final LeafNode<K, V> findSideLeafNode(final boolean lowORhigh) {
-		if (_isEmpty()) return null;
+		if (_isEmpty()) {
+			return null;
+		}
 		try {
 			int nodeIdx = (lowORhigh ? lowIdx : highIdx); // rootIdx;
 			Node<K, V> nodeFind = getNode((nodeIdx == 0) ? rootIdx : nodeIdx);
 			while (!nodeFind.isLeaf()) {
-				nodeIdx = ((InternalNode<K, V>)nodeFind).childs[(lowORhigh ? 0 : nodeFind.allocated)];
+				nodeIdx = ((InternalNode<K, V>) nodeFind).childs[(lowORhigh ? 0 : nodeFind.allocated)];
 				nodeFind = getNode(nodeIdx);
 			}
-			return (nodeFind.isLeaf() ? (LeafNode<K, V>)nodeFind : null);
+			return (nodeFind.isLeaf() ? (LeafNode<K, V>) nodeFind : null);
 		} finally {
 			releaseNodes();
 		}
@@ -514,8 +582,9 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 
 	/**
 	 * Returns the least key greater than or equal to the given key, or null if there is no such key.
+	 * 
 	 * @param key the key
-	 * @return the least key greater than or equal to key, or null if there is no such key 
+	 * @return the least key greater than or equal to key, or null if there is no such key
 	 */
 	public synchronized K ceilingKey(final K key) {
 		// Retorna la clave mas cercana mayor o igual a la clave indicada
@@ -524,6 +593,7 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 
 	/**
 	 * Returns the greatest key less than or equal to the given key, or null if there is no such key.
+	 * 
 	 * @param key the key
 	 * @return the greatest key less than or equal to key, or null if there is no such key
 	 */
@@ -534,6 +604,7 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 
 	/**
 	 * Returns the least key strictly greater than the given key, or null if there is no such key.
+	 * 
 	 * @param key the key
 	 * @return the least key strictly greater than the given key, or null if there is no such key.
 	 */
@@ -544,6 +615,7 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 
 	/**
 	 * Returns the greatest key strictly less than the given key, or null if there is no such key.
+	 * 
 	 * @param key the key
 	 * @return the greatest key strictly less than the given key, or null if there is no such key.
 	 */
@@ -554,6 +626,7 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 
 	/**
 	 * Return ceilingKey, floorKey, higherKey or lowerKey
+	 * 
 	 * @param key the key
 	 * @param upORdown true returns ceilingKey, false floorKey
 	 * @param acceptEqual true returns equal keys, otherwise, only higher or lower
@@ -561,14 +634,17 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 	 */
 	private final K getRoundKey(final K key, final boolean upORdown, final boolean acceptEqual) {
 		final TreeEntry<K, V> entry = getRoundEntry(key, upORdown, acceptEqual);
-		if (entry == null) return null;
+		if (entry == null) {
+			return null;
+		}
 		return entry.getKey();
-	}	
+	}
 
 	/**
 	 * Returns the least key greater than or equal to the given key, or null if there is no such key.
+	 * 
 	 * @param key the key
-	 * @return the Entry with least key greater than or equal to key, or null if there is no such key 
+	 * @return the Entry with least key greater than or equal to key, or null if there is no such key
 	 */
 	public synchronized TreeEntry<K, V> ceilingEntry(final K key) {
 		// Retorna la clave mas cercana mayor o igual a la clave indicada
@@ -577,6 +653,7 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 
 	/**
 	 * Returns the greatest key less than or equal to the given key, or null if there is no such key.
+	 * 
 	 * @param key the key
 	 * @return the Entry with greatest key less than or equal to key, or null if there is no such key
 	 */
@@ -587,6 +664,7 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 
 	/**
 	 * Returns the least key strictly greater than the given key, or null if there is no such key.
+	 * 
 	 * @param key the key
 	 * @return the Entry with least key strictly greater than the given key, or null if there is no such key.
 	 */
@@ -597,6 +675,7 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 
 	/**
 	 * Returns the greatest key strictly less than the given key, or null if there is no such key.
+	 * 
 	 * @param key the key
 	 * @return the Entry with greatest key strictly less than the given key, or null if there is no such key.
 	 */
@@ -607,38 +686,51 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 
 	/**
 	 * Return ceilingEntry, floorEntry, higherEntry or lowerEntry
+	 * 
 	 * @param key the key
 	 * @param upORdown true returns ceiling/higher, false floor/lower
 	 * @param acceptEqual true returns equal keys, otherwise, only higher or lower
 	 * @return the Entry found or null if not found
 	 */
 	private final TreeEntry<K, V> getRoundEntry(final K key, final boolean upORdown, final boolean acceptEqual) {
-		if (!validState) throw new InvalidStateException();
-		if (_isEmpty()) return null;
-		if (key == null) return null;
+		if (!validState) {
+			throw new InvalidStateException();
+		}
+		if (_isEmpty()) {
+			return null;
+		}
+		if (key == null) {
+			return null;
+		}
 		try {
 			LeafNode<K, V> node = findLeafNode(key, false);
-			if (node == null) return null;
+			if (node == null) {
+				return null;
+			}
 			int slot = node.findSlotByKey(key);
-			if (upORdown) { 
+			if (upORdown) {
 				// ceiling / higher
-				slot = ((slot < 0) ? (-slot)-1 : (acceptEqual ? slot : slot+1));
+				slot = ((slot < 0) ? (-slot) - 1 : (acceptEqual ? slot : slot + 1));
 				if (slot >= node.allocated) {
 					node = node.nextNode();
-					if (node == null) return null;
+					if (node == null) {
+						return null;
+					}
 					slot = 0;
 				}
-			}
-			else { 
+			} else {
 				// floor / lower
-				slot = ((slot < 0) ? (-slot)-2 : (acceptEqual ? slot : slot-1));
+				slot = ((slot < 0) ? (-slot) - 2 : (acceptEqual ? slot : slot - 1));
 				if (slot < 0) {
 					node = node.prevNode();
-					if (node == null) return null;
-					slot = node.allocated-1;
+					if (node == null) {
+						return null;
+					}
+					slot = node.allocated - 1;
 				}
 			}
-			return ((node.keys[slot] == null) ? null : new TreeEntry<K, V>(node.keys[slot], node.values[slot]));
+			return ((node.keys[slot] == null) ? null
+					: new TreeEntry<K, V>(node.keys[slot], node.values[slot]));
 		} finally {
 			releaseNodes();
 		}
@@ -646,6 +738,7 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 
 	/**
 	 * Returns true if this tree contains the specified key.
+	 * 
 	 * @param key to find
 	 * @return true if found
 	 */
@@ -655,16 +748,25 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 
 	/**
 	 * Find a Key in the Tree
+	 * 
 	 * @param key to find
 	 * @return Value found or null if not
 	 */
 	public synchronized V get(final K key) {
-		if (!validState) throw new InvalidStateException();
-		if (_isEmpty()) return null;
-		if (key == null) return null;
+		if (!validState) {
+			throw new InvalidStateException();
+		}
+		if (_isEmpty()) {
+			return null;
+		}
+		if (key == null) {
+			return null;
+		}
 		try {
 			final LeafNode<K, V> node = findLeafNode(key, false);
-			if (node == null) return null;
+			if (node == null) {
+				return null;
+			}
 			int slot = node.findSlotByKey(key);
 			if (slot >= 0) {
 				return node.values[slot];
@@ -677,38 +779,51 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 
 	/**
 	 * Remove a key from key
+	 * 
 	 * @param key to delete
 	 * @return true if key was removed, false if not
 	 */
 	public synchronized boolean remove(final K key) {
-		if (readOnly)
+		if (readOnly) {
 			return false;
-		if (!validState) throw new InvalidStateException();
-		if (key == null) return false;
+		}
+		if (!validState) {
+			throw new InvalidStateException();
+		}
+		if (key == null) {
+			return false;
+		}
 		try {
-			if (log.isDebugEnabled())
+			if (log.isDebugEnabled()) {
 				log.debug("trying remove key=" + key);
+			}
 			submitRedoRemove(key);
 			if (removeIterative(key)) { // removeRecursive(key, rootIdx)
 				elements--;
 				Node<K, V> nodeRoot = getNode(rootIdx);
 				if (nodeRoot.isEmpty() && (elements > 0)) { // root has only one child
 					// Si sale un ClassCastException es porque hay algun error en la cuenta de elementos
-					rootIdx = ((InternalNode<K, V>)nodeRoot).childs[0];
+					rootIdx = ((InternalNode<K, V>) nodeRoot).childs[0];
 					// Clean old nodeRoot
 					freeNode(nodeRoot);
-					if (log.isDebugEnabled())
-						log.debug("DECREASES TREE HEIGHT (ROOT): elements=" + elements + " oldRoot=" + nodeRoot.id + " newRoot=" + rootIdx);
+					if (log.isDebugEnabled()) {
+						log.debug("DECREASES TREE HEIGHT (ROOT): elements=" + elements + " oldRoot="
+								+ nodeRoot.id + " newRoot=" + rootIdx);
+					}
 					height--; // tree height
-				}
-				else if (nodeRoot.isEmpty() && nodeRoot.isLeaf() && (elements == 0) && (getHighestNodeId() > 4096)) {
+				} else if (nodeRoot.isEmpty() && nodeRoot.isLeaf() && (elements == 0)
+						&& (getHighestNodeId() > 4096)) {
 					// Hace un reset del arbol para liberar espacio de modo rapido
-					if (log.isDebugEnabled())
-						log.debug("RESET TREE: elements=" + elements + " leaf=" + nodeRoot.isLeaf() + " empty=" + nodeRoot.isEmpty() + " id=" + nodeRoot.id + " lastNodeId=" + getHighestNodeId() + " nodeRoot=" + nodeRoot);
+					if (log.isDebugEnabled()) {
+						log.debug("RESET TREE: elements=" + elements + " leaf=" + nodeRoot.isLeaf()
+								+ " empty=" + nodeRoot.isEmpty() + " id=" + nodeRoot.id + " lastNodeId="
+								+ getHighestNodeId() + " nodeRoot=" + nodeRoot);
+					}
 					clear();
-				}
-				else if ((elements == 0) && (!nodeRoot.isLeaf() || !nodeRoot.isEmpty())) {
-					log.error("ERROR in TREE: elements=" + elements + " rootLeaf=" + nodeRoot.isLeaf() + " rootEmpty=" + nodeRoot.isEmpty() + " rootId=" + nodeRoot.id + " nodeRoot=" + nodeRoot);
+				} else if ((elements == 0) && (!nodeRoot.isLeaf() || !nodeRoot.isEmpty())) {
+					log.error("ERROR in TREE: elements=" + elements + " rootLeaf=" + nodeRoot.isLeaf()
+							+ " rootEmpty=" + nodeRoot.isEmpty() + " rootId=" + nodeRoot.id + " nodeRoot="
+							+ nodeRoot);
 				}
 				return true;
 			}
@@ -728,22 +843,26 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 	 * @return true if key was removed and false otherwise
 	 */
 	protected boolean removeRecursive(final K key, final int nodeid) {
-		if (nodeid == Node.NULL_ID) return false;  // NOT FOUND
+		if (nodeid == Node.NULL_ID) {
+			return false;  // NOT FOUND
+		}
 		Node<K, V> nodeDelete = getNode(nodeid);
-		if (log.isDebugEnabled())
+		if (log.isDebugEnabled()) {
 			log.debug("trying removeRecursive nodeDelete=" + nodeDelete + " key=" + key);
+		}
 		int slot = nodeDelete.findSlotByKey(key);
 		if (nodeDelete.isLeaf()) {
 			if (slot < 0) {
-				if (log.isDebugEnabled())
+				if (log.isDebugEnabled()) {
 					log.debug("NOT FOUND nodeDelete=" + nodeDelete + " key=" + key);
+				}
 				return false; // NOT FOUND
 			}
 			nodeDelete.remove(slot);
 			putNode(nodeDelete);
 			return true;
 		}
-		slot = ((slot < 0) ? (-slot)-1 : slot+1);
+		slot = ((slot < 0) ? (-slot) - 1 : slot + 1);
 		final InternalNode<K, V> nodeDeleteInternal = (InternalNode<K, V>) nodeDelete;
 		if (removeRecursive(key, nodeDeleteInternal.childs[slot])) {
 			nodeDeleteInternal.checkUnderflow(slot);
@@ -782,6 +901,7 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 
 	/**
 	 * submit put to redo
+	 * 
 	 * @param key
 	 * @param value
 	 */
@@ -789,42 +909,53 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 
 	/**
 	 * submit remove to redo
+	 * 
 	 * @param value
 	 */
 	abstract protected void submitRedoRemove(final K key);
 
 	/**
 	 * submit metadata to redo
+	 * 
 	 * @param value
 	 */
 	abstract protected void submitRedoMeta(final int value);
 
 	/**
 	 * Put the value in the tree (if key already exists, update value)
+	 * 
 	 * @param key
 	 * @param value
 	 * @return true if operation is ok, else false
 	 */
 	public synchronized boolean put(final K key, final V value) {
-		if (readOnly)
+		if (readOnly) {
 			return false;
-		if (!validState) throw new InvalidStateException();
-		if (key == null) return false;
-		if (value == null) return false;
+		}
+		if (!validState) {
+			throw new InvalidStateException();
+		}
+		if (key == null) {
+			return false;
+		}
+		if (value == null) {
+			return false;
+		}
 		try {
 			submitRedoPut(key, value);
 			Node<K, V> splitedNode;
 			try {
 				splitedNode = putIterative(key, value); // putRecursive(key, value, rootIdx);
-			}
-			catch (DuplicateKeyException e) {
+			} catch (DuplicateKeyException e) {
 				return false;
 			}
 			if (splitedNode != null) {   // root was split, make new root
 				InternalNode<K, V> nodeRootNew = createInternalNode();
 				nodeRootNew.allocId();
-				if (log.isDebugEnabled())
-					log.debug("INCREASES TREE HEIGHT (ROOT): elements=" + elements + " oldRoot=" + rootIdx + " newRoot=" + nodeRootNew.id);
+				if (log.isDebugEnabled()) {
+					log.debug("INCREASES TREE HEIGHT (ROOT): elements=" + elements + " oldRoot=" + rootIdx
+							+ " newRoot=" + nodeRootNew.id);
+				}
 				final K newkey = splitedNode.splitShiftKeysLeft();
 				putNode(splitedNode);
 				nodeRootNew.childs[0] = rootIdx;
@@ -859,26 +990,26 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 	protected Node<K, V> putRecursive(K key, final V value, final int nodeid) throws DuplicateKeyException {
 		final Node<K, V> nodeFind = getNode(nodeid);
 		if (nodeFind == null) {
-			if (log.isDebugEnabled())
-				log.debug(this.getClass().getName() + "::putRecursive getNode("+nodeid+")=null");
+			if (log.isDebugEnabled()) {
+				log.debug(this.getClass().getName() + "::putRecursive getNode(" + nodeid + ")=null");
+			}
 		}
 		int slot = nodeFind.findSlotByKey(key);
 		if (slot >= 0) {
 			if (nodeFind.isLeaf()) { // leaf node, just reset it
-				final LeafNode<K, V> node = (LeafNode<K, V>)nodeFind;
+				final LeafNode<K, V> node = (LeafNode<K, V>) nodeFind;
 				node.set(slot, value);
 				putNode(node);
 				throw new DuplicateKeyException();
-			} 
+			}
 		}
-		slot = ((slot < 0) ? (-slot)-1 : slot+1);
+		slot = ((slot < 0) ? (-slot) - 1 : slot + 1);
 		if (nodeFind.isLeaf()) { // leaf node, just add it
-			final LeafNode<K, V> node = (LeafNode<K, V>)nodeFind;
+			final LeafNode<K, V> node = (LeafNode<K, V>) nodeFind;
 			node.add(slot, key, value);
 			putNode(node);
-		} 
-		else {
-			final InternalNode<K, V> node = (InternalNode<K, V>)nodeFind;
+		} else {
+			final InternalNode<K, V> node = (InternalNode<K, V>) nodeFind;
 			final Node<K, V> splitedNode = putRecursive(key, value, node.childs[slot]);
 			if (splitedNode != null) {  // child was split, splitedNode is new child
 				key = splitedNode.splitShiftKeysLeft();
@@ -908,7 +1039,7 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 			while (!stackNodes.isEmpty()) {
 				sb.append("\n").append(stackNodes.pop());
 			}
-			throw new NullPointerException("findLeafNode("+key+", true)==null:" + sb.toString());
+			throw new NullPointerException("findLeafNode(" + key + ", true)==null:" + sb.toString());
 		}
 		//
 		// Find in leaf node for key
@@ -920,7 +1051,7 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 		}
 		//
 		// not found, add
-		slot = (-slot)-1;
+		slot = (-slot) - 1;
 		Node<K, V> splitedNode = null;
 		nodeLeaf.add(slot, key, value);
 		putNode(nodeLeaf);
@@ -946,7 +1077,9 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 	 * Return a string version of the tree
 	 */
 	public synchronized String toString() {
-		if (!validState) throw new InvalidStateException();
+		if (!validState) {
+			throw new InvalidStateException();
+		}
 		try {
 			return toStringIterative();
 		} finally {
@@ -958,6 +1091,7 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 
 	/**
 	 * A iterative algorithm for converting this tree into a string
+	 * 
 	 * @return String representing human readable tree
 	 */
 	private String toStringIterative() {
@@ -969,16 +1103,15 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 		int depth = 0;
 		stackSlots.clear();
 		stackSlots.push(rootIdx); // init seed, root node
-		boolean lastIsInternal = !Node.isLeaf(rootIdx); 
+		boolean lastIsInternal = !Node.isLeaf(rootIdx);
 		while (!stackSlots.isEmpty()) {
 			nodeid = stackSlots.pop();
 			node = getNode(nodeid);
 			if (!node.isLeaf()) {
 				for (int i = node.allocated; i >= 0; i--) {
-					stackSlots.push(((InternalNode<K, V>)node).childs[i]);
+					stackSlots.push(((InternalNode<K, V>) node).childs[i]);
 				}
-			}
-			else {
+			} else {
 				elements_debug_local_recounter += node.allocated;
 			}
 			// For Indentation
@@ -986,38 +1119,31 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 				depth += (lastIsInternal ? +1 : -1);
 			}
 			lastIsInternal = !node.isLeaf();
-			sb.append(PADDING.substring(0, Math.min(PADDING.length(), Math.max(depth-1, 0))));
+			sb.append(PADDING.substring(0, Math.min(PADDING.length(), Math.max(depth - 1, 0))));
 			//
 			sb.append(node.toString()).append("\n");
 		}
 
 		// Count elements
-		sb
-		.append("height=").append(getHeight())
-		.append(" root=").append(rootIdx)
-		.append(" low=").append(lowIdx)
-		.append(" high=").append(highIdx)
-		.append(" elements=").append(elements)
-		.append(" recounter=").append(elements_debug_local_recounter);
+		sb.append("height=").append(getHeight()).append(" root=").append(rootIdx).append(" low=")
+				.append(lowIdx).append(" high=").append(highIdx).append(" elements=").append(elements)
+				.append(" recounter=").append(elements_debug_local_recounter);
 
 		return sb.toString();
 	}
 
 	/**
 	 * A recursive algorithm for converting this tree into a string
+	 * 
 	 * @return String representing human readable tree
 	 */
 	@SuppressWarnings("unused")
 	private String toStringRecursive() {
 		final StringBuilder sb = new StringBuilder();
 		int elements_debug_local_recounter = toString(rootIdx, sb, 0);
-		sb
-		.append("height=").append(getHeight())
-		.append(" root=").append(rootIdx)
-		.append(" low=").append(lowIdx)
-		.append(" high=").append(highIdx)
-		.append(" elements=").append(elements)
-		.append(" recounter=").append(elements_debug_local_recounter);
+		sb.append("height=").append(getHeight()).append(" root=").append(rootIdx).append(" low=")
+				.append(lowIdx).append(" high=").append(highIdx).append(" elements=").append(elements)
+				.append(" recounter=").append(elements_debug_local_recounter);
 		return sb.toString();
 	}
 
@@ -1028,30 +1154,33 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 	 * @param sb a StringBuilder for building the string
 	 */
 	private int toString(final int nodeid, final StringBuilder sb, final int depth) {
-		if (nodeid == Node.NULL_ID) return 0;
+		if (nodeid == Node.NULL_ID) {
+			return 0;
+		}
 		final Node<K, V> node = getNode(nodeid);
 		int elements_debug_local_recounter = 0;
 		if (node == null) {
-			if (log.isDebugEnabled())
-				log.debug(this.getClass().getName() + "::toString() getNode("+nodeid+")=null");
+			if (log.isDebugEnabled()) {
+				log.debug(this.getClass().getName() + "::toString() getNode(" + nodeid + ")=null");
+			}
 			return 0;
 		}
 		int i = 0;
-		sb
-		.append("           ".substring(0, depth))
-		//.append("[").append(nodeIdx).append("]")
-		.append(node.toString()).append("\n");
+		sb.append("           ".substring(0, depth))
+		// .append("[").append(nodeIdx).append("]")
+				.append(node.toString()).append("\n");
 		if (node.isLeaf()) {
 			elements_debug_local_recounter += node.allocated;
 		}
-		while((i < node.allocated) && (node.keys[i] != null)) {
+		while ((i < node.allocated) && (node.keys[i] != null)) {
 			if (!node.isLeaf()) {
-				elements_debug_local_recounter += toString(((InternalNode<K, V>)node).childs[i], sb, depth+1);
+				elements_debug_local_recounter += toString(((InternalNode<K, V>) node).childs[i], sb,
+						depth + 1);
 			}
 			i++;
 		}
 		if (!node.isLeaf()) {
-			elements_debug_local_recounter += toString(((InternalNode<K, V>)node).childs[i], sb, depth+1);
+			elements_debug_local_recounter += toString(((InternalNode<K, V>) node).childs[i], sb, depth + 1);
 		}
 		return elements_debug_local_recounter;
 	}
@@ -1082,12 +1211,11 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 		@SuppressWarnings("unchecked")
 		private final T nextEntry() {
 			if (!hasBegin) {
-				nextElement = (T)tree.firstEntry();
+				nextElement = (T) tree.firstEntry();
 				return nextElement;
-			}
-			else {
+			} else {
 				if (lastReturned.getKey().compareTo(nextElement.getKey()) >= 0) {
-					nextElement = (T)tree.higherEntry(lastReturned.getKey());
+					nextElement = (T) tree.higherEntry(lastReturned.getKey());
 				}
 			}
 			return (nextElement);
@@ -1102,15 +1230,17 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 		public T next() {
 			lastReturned = nextEntry();
 			hasBegin = true;
-			if (nextElement == null)
+			if (nextElement == null) {
 				throw new java.util.NoSuchElementException();
+			}
 			return nextElement;
 		}
 
 		@Override
 		public void remove() {
-			if (lastReturned == null)
+			if (lastReturned == null) {
 				throw new IllegalStateException();
+			}
 			tree.remove(lastReturned.getKey());
 		}
 
@@ -1119,10 +1249,11 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 	// ========== Exceptions
 
 	/**
-	 * Exception throwed then set a key already existent in the tree 
+	 * Exception throwed then set a key already existent in the tree
 	 */
 	static class DuplicateKeyException extends Exception {
 		private static final long serialVersionUID = 42L;
+
 		@Override
 		public Throwable fillInStackTrace() {
 			return this;
@@ -1134,12 +1265,14 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 	 */
 	public static class InvalidDataException extends Exception {
 		private static final long serialVersionUID = 42L;
+
 		public InvalidDataException(final String str) {
 			super(str);
 		}
 	}
+
 	/**
-	 * Exception throwed when Tree is in invalid state (closed) 
+	 * Exception throwed when Tree is in invalid state (closed)
 	 */
 	public static class InvalidStateException extends RuntimeException {
 		private static final long serialVersionUID = 42L;
@@ -1148,12 +1281,12 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 	// ========== TreeEntry
 
 	/**
-	 * A map entry (key-value pair). These TreeEntry are read-only objects. 
-	 *
+	 * A map entry (key-value pair). These TreeEntry are read-only objects.
+	 * 
 	 * @param <K> the key
 	 * @param <V> the value
 	 */
-	public static class TreeEntry<K, V> implements java.util.Map.Entry<K,V> {
+	public static class TreeEntry<K, V> implements java.util.Map.Entry<K, V> {
 		private final K key;
 		private final V value;
 
@@ -1163,8 +1296,9 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 		}
 
 		/**
-		 * Returns the key corresponding to this entry. 
-		 * @return the key corresponding to this entry 
+		 * Returns the key corresponding to this entry.
+		 * 
+		 * @return the key corresponding to this entry
 		 */
 		@Override
 		public K getKey() {
@@ -1172,7 +1306,8 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 		}
 
 		/**
-		 * Returns the value corresponding to this entry.  
+		 * Returns the value corresponding to this entry.
+		 * 
 		 * @return the value corresponding to this entry
 		 */
 		@Override
@@ -1182,6 +1317,7 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 
 		/**
 		 * operation not supported.
+		 * 
 		 * @param value
 		 * @throws UnsupportedOperationException operation is not supported
 		 */
@@ -1191,22 +1327,30 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 		}
 
 		/**
-		 * Compares the specified object with this entry for equality. Returns true if the given object is also a map entry and the two entries represent the same mapping.
+		 * Compares the specified object with this entry for equality. Returns true if the given object is
+		 * also a map entry and the two entries represent the same mapping.
+		 * 
 		 * @param other object to compare
 		 * @return boolean true if equals
 		 */
 		@Override
 		public boolean equals(final Object other) {
-			if (other == null) return false;
-			if (!(other instanceof TreeEntry)) return false;
+			if (other == null) {
+				return false;
+			}
+			if (!(other instanceof TreeEntry)) {
+				return false;
+			}
 			//
 			final TreeEntry<K, V> e1 = this;
 			@SuppressWarnings("unchecked")
 			final TreeEntry<K, V> e2 = (TreeEntry<K, V>) other;
 			//
-			final boolean keyEquals = ((e1.getKey()==null) ? (e2.getKey()==null) : e1.getKey().equals(e2.getKey()));
-			final boolean valueEquals = ((e1.getValue()==null) ? (e2.getValue()==null) : e1.getValue().equals(e2.getValue()));
-			///
+			final boolean keyEquals = ((e1.getKey() == null) ? (e2.getKey() == null) : e1.getKey().equals(
+					e2.getKey()));
+			final boolean valueEquals = ((e1.getValue() == null) ? (e2.getValue() == null) : e1.getValue()
+					.equals(e2.getValue()));
+			//
 			return (keyEquals && valueEquals);
 		}
 
@@ -1215,7 +1359,8 @@ public abstract class BplusTree<K extends DataHolder<K>, V extends DataHolder<V>
 		 */
 		@Override
 		public String toString() {
-			return (key == null ? "null" : key.toString()) + "=" + (value == null? "null" : value.toString());
+			return (key == null ? "null" : key.toString()) + "="
+					+ (value == null ? "null" : value.toString());
 		}
 	}
 }
