@@ -4,7 +4,7 @@
 
 	<groupId>org.javastack</groupId>
 	<artifactId>kvstore</artifactId>
-	<version>1.0.1</version>
+	<version>1.0.2</version>
 	<description>KVStore is a simple Key-Value Store based on B+Tree (disk and memory) for Java</description>
 
 	<name>${project.groupId}:${project.artifactId}</name>
@@ -29,29 +29,33 @@
 	</scm>
 
 	<dependencies>
+		<!-- Log4J 1.2 replacement -->
 		<dependency>
-			<groupId>log4j</groupId>
-			<artifactId>log4j</artifactId>
-			<version>1.2.17</version>
-			<type>jar</type>
+			<groupId>ch.qos.reload4j</groupId>
+			<artifactId>reload4j</artifactId>
+			<version>1.2.19</version>
 		</dependency>
 	</dependencies>
+
+	<properties>
+		<java.version>1.7</java.version>
+	</properties>
 
 	<build>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>2.3.2</version>
+				<version>3.8.1</version>
 				<configuration>
-					<source>1.6</source>
-					<target>1.6</target>
+					<source>${java.version}</source>
+					<target>${java.version}</target>
 				</configuration>
 			</plugin>
 			<!-- Package Classes to JAR to upload to repo -->
 			<plugin>
 				<artifactId>maven-jar-plugin</artifactId>
-				<version>2.3.1</version>
+				<version>3.2.0</version>
 				<configuration>
 					<finalName>${project.artifactId}-${project.version}</finalName>
 					<forceCreation>true</forceCreation>
@@ -71,13 +75,18 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-source-plugin</artifactId>
-				<version>2.2.1</version>
+				<version>3.2.1</version>
 				<executions>
 					<execution>
 						<goals>
 							<goal>jar</goal>
 						</goals>
 						<configuration>
+							<archive>
+								<manifestEntries>
+									<Built-By>maven</Built-By>
+								</manifestEntries>
+							</archive>
 							<excludeResources>true</excludeResources>
 							<excludes>
 								<exclude>**/sandbox/*</exclude>
@@ -90,7 +99,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>2.3</version>
+				<version>3.2.0</version>
 				<executions>
 					<execution>
 						<id>attach-javadocs</id>
@@ -100,6 +109,7 @@
 					</execution>
 				</executions>
 				<configuration>
+					<source>${java.version}</source>
 					<tags>
 						<tag>
 							<name>threadSafe</name>
@@ -108,13 +118,15 @@
 						</tag>
 					</tags>
 					<excludePackageNames>*.sandbox.*</excludePackageNames>
+					<!-- FIXME: Dont Break -->
+					<doclint>none</doclint>
 				</configuration>
 			</plugin>
 			<!-- GPG Signed Components for Maven Central -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-gpg-plugin</artifactId>
-				<version>1.5</version>
+				<version>1.6</version>
 				<executions>
 					<execution>
 						<id>sign-artifacts</id>
@@ -129,7 +141,7 @@
 			<plugin>
 				<groupId>org.sonatype.plugins</groupId>
 				<artifactId>nexus-staging-maven-plugin</artifactId>
-				<version>1.6.3</version>
+				<version>1.6.8</version>
 				<extensions>true</extensions>
 				<configuration>
 					<serverId>ossrh</serverId>
